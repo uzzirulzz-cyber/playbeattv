@@ -45,73 +45,74 @@
 
 :root {
   --radius: 0.75rem;
-  /* Light theme: soft warm neutrals with rose accent */
-  --background: oklch(0.985 0.004 20);
-  --foreground: oklch(0.2 0.02 350);
+  /* Light theme: clean white with blue accent (matches logo) */
+  --background: oklch(0.985 0.002 240);
+  --foreground: oklch(0.2 0.01 240);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 350);
+  --card-foreground: oklch(0.2 0.01 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 350);
-  --primary: oklch(0.62 0.24 350);
-  --primary-foreground: oklch(0.99 0.01 350);
-  --secondary: oklch(0.96 0.01 350);
-  --secondary-foreground: oklch(0.28 0.04 350);
-  --muted: oklch(0.96 0.006 350);
-  --muted-foreground: oklch(0.52 0.03 350);
-  --accent: oklch(0.94 0.06 350);
-  --accent-foreground: oklch(0.28 0.08 350);
+  --popover-foreground: oklch(0.2 0.01 240);
+  --primary: oklch(0.62 0.2 240);
+  --primary-foreground: oklch(0.99 0.01 240);
+  --secondary: oklch(0.95 0.01 240);
+  --secondary-foreground: oklch(0.25 0.02 240);
+  --muted: oklch(0.95 0.006 240);
+  --muted-foreground: oklch(0.5 0.015 240);
+  --accent: oklch(0.93 0.04 240);
+  --accent-foreground: oklch(0.25 0.04 240);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.01 350);
-  --input: oklch(0.9 0.01 350);
-  --ring: oklch(0.62 0.24 350);
-  --chart-1: oklch(0.62 0.24 350);
-  --chart-2: oklch(0.6 0.18 200);
+  --border: oklch(0.9 0.01 240);
+  --input: oklch(0.9 0.01 240);
+  --ring: oklch(0.62 0.2 240);
+  --chart-1: oklch(0.62 0.2 240);
+  --chart-2: oklch(0.65 0.18 200);
   --chart-3: oklch(0.65 0.2 80);
   --chart-4: oklch(0.55 0.22 30);
   --chart-5: oklch(0.6 0.2 300);
-  --sidebar: oklch(0.975 0.006 350);
-  --sidebar-foreground: oklch(0.2 0.02 350);
-  --sidebar-primary: oklch(0.62 0.24 350);
-  --sidebar-primary-foreground: oklch(0.99 0.01 350);
-  --sidebar-accent: oklch(0.94 0.06 350);
-  --sidebar-accent-foreground: oklch(0.28 0.08 350);
-  --sidebar-border: oklch(0.9 0.01 350);
-  --sidebar-ring: oklch(0.62 0.24 350);
+  --sidebar: oklch(0.97 0.006 240);
+  --sidebar-foreground: oklch(0.2 0.01 240);
+  --sidebar-primary: oklch(0.62 0.2 240);
+  --sidebar-primary-foreground: oklch(0.99 0.01 240);
+  --sidebar-accent: oklch(0.93 0.04 240);
+  --sidebar-accent-foreground: oklch(0.25 0.04 240);
+  --sidebar-border: oklch(0.9 0.01 240);
+  --sidebar-ring: oklch(0.62 0.2 240);
 }
 
 .dark {
-  /* PLAYBEAT dark: deep near-black with electric rose accent */
-  --background: oklch(0.155 0.008 350);
-  --foreground: oklch(0.97 0.006 350);
-  --card: oklch(0.2 0.012 350);
-  --card-foreground: oklch(0.97 0.006 350);
-  --popover: oklch(0.215 0.012 350);
-  --popover-foreground: oklch(0.97 0.006 350);
-  --primary: oklch(0.66 0.25 350);
-  --primary-foreground: oklch(0.16 0.04 350);
-  --secondary: oklch(0.27 0.015 350);
-  --secondary-foreground: oklch(0.97 0.006 350);
-  --muted: oklch(0.26 0.012 350);
-  --muted-foreground: oklch(0.7 0.015 350);
-  --accent: oklch(0.32 0.08 350);
-  --accent-foreground: oklch(0.96 0.02 350);
+  /* PlayBeat TV dark theme: solid black with vibrant blue (#0099FF) accent.
+     Matches the logo: black bg, blue play button, silver text, navy depth. */
+  --background: oklch(0.13 0.005 240);       /* near-black with blue tint */
+  --foreground: oklch(0.85 0.01 240);         /* silver-white text */
+  --card: oklch(0.17 0.008 240);              /* dark card surface */
+  --card-foreground: oklch(0.85 0.01 240);
+  --popover: oklch(0.18 0.01 240);
+  --popover-foreground: oklch(0.85 0.01 240);
+  --primary: oklch(0.62 0.2 240);             /* #0099FF vibrant blue */
+  --primary-foreground: oklch(0.13 0.02 240);
+  --secondary: oklch(0.24 0.01 240);          /* navy-gray */
+  --secondary-foreground: oklch(0.85 0.01 240);
+  --muted: oklch(0.22 0.008 240);
+  --muted-foreground: oklch(0.6 0.015 240);   /* silver-gray */
+  --accent: oklch(0.28 0.06 240);             /* blue-tinted accent */
+  --accent-foreground: oklch(0.9 0.03 240);
   --destructive: oklch(0.7 0.19 22);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.66 0.25 350);
-  --chart-1: oklch(0.66 0.25 350);
-  --chart-2: oklch(0.6 0.18 200);
+  --ring: oklch(0.62 0.2 240);               /* #0099FF ring */
+  --chart-1: oklch(0.62 0.2 240);
+  --chart-2: oklch(0.65 0.18 200);
   --chart-3: oklch(0.7 0.2 80);
   --chart-4: oklch(0.6 0.22 30);
   --chart-5: oklch(0.65 0.2 300);
-  --sidebar: oklch(0.18 0.012 350);
-  --sidebar-foreground: oklch(0.97 0.006 350);
-  --sidebar-primary: oklch(0.66 0.25 350);
-  --sidebar-primary-foreground: oklch(0.16 0.04 350);
-  --sidebar-accent: oklch(0.3 0.06 350);
-  --sidebar-accent-foreground: oklch(0.96 0.02 350);
+  --sidebar: oklch(0.15 0.006 240);           /* black sidebar */
+  --sidebar-foreground: oklch(0.85 0.01 240);
+  --sidebar-primary: oklch(0.62 0.2 240);     /* #0099FF */
+  --sidebar-primary-foreground: oklch(0.13 0.02 240);
+  --sidebar-accent: oklch(0.26 0.04 240);
+  --sidebar-accent-foreground: oklch(0.9 0.03 240);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.66 0.25 350);
+  --sidebar-ring: oklch(0.62 0.2 240);
 }
 
 @layer base {
@@ -147,13 +148,18 @@
   scrollbar-width: none;
 }
 
-/* PLAYBEAT brand gradient */
+/* PlayBeat brand gradient — blue (#0099FF → #00BFFF) */
 .brand-gradient {
-  background: linear-gradient(135deg, oklch(0.66 0.25 350) 0%, oklch(0.62 0.24 320) 100%);
+  background: linear-gradient(135deg, #0099FF 0%, #00BFFF 100%);
 }
 .brand-text {
-  background: linear-gradient(135deg, oklch(0.7 0.25 350) 0%, oklch(0.66 0.24 320) 100%);
+  background: linear-gradient(135deg, #0099FF 0%, #00BFFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Glow effect for primary elements */
+.brand-glow {
+  box-shadow: 0 0 20px rgba(0, 153, 255, 0.3);
 }

@@ -16,6 +16,7 @@ import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PLAN_LIST } from "@/lib/plans";
+import { Logo } from "@/components/iptv/logo";
 
 export function LandingView() {
   const openAuth = useAppStore((s) => s.openAuth);
@@ -37,14 +38,7 @@ export function LandingView() {
     <div className="bg-background" style={{ minHeight: "100vh" }}>
       {/* Top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg brand-gradient text-white">
-            <PlayCircle className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-extrabold tracking-tight">
-            PlayBeat <span className="brand-text">TV</span>
-          </span>
-        </div>
+        <Logo size={36} />
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -196,10 +190,7 @@ export function LandingView() {
       {/* Footer */}
       <footer className="border-t border-border px-4 py-6 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-sm text-muted-foreground sm:flex-row">
-          <span className="flex items-center gap-1.5">
-            <PlayCircle className="h-4 w-4 text-primary" />
-            PlayBeat TV · playbeat.live
-          </span>
+          <Logo size={28} />
           <span>© {new Date().getFullYear()} PlayBeat TV. All rights reserved.</span>
         </div>
       </footer>

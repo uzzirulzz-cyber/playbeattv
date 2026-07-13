@@ -35,6 +35,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { api } from "@/hooks/use-iptv";
 import { toast } from "sonner";
+import { Logo } from "@/components/iptv/logo";
 
 interface ProviderInfo {
   id: string;
@@ -141,13 +142,13 @@ export function AuthDialog() {
       <DialogContent className="max-w-md overflow-hidden p-0">
         {/* Brand header */}
         <div className="brand-gradient px-6 pb-5 pt-6 text-white">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/15 backdrop-blur">
-              <PlayCircle className="h-6 w-6" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/15 backdrop-blur">
+              <Logo showText={false} size={32} />
             </div>
             <div>
-              <DialogTitle className="text-xl font-extrabold">
-                PlayBeat <span className="opacity-90">TV</span>
+              <DialogTitle className="text-xl font-extrabold uppercase tracking-tight">
+                PlayBeat TV
               </DialogTitle>
               <DialogDescription className="text-white/80">
                 {isSignup

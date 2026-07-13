@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   authors: [{ name: "PlayBeat TV" }],
   metadataBase: new URL("https://playbeat.live"),
   alternates: { canonical: "https://playbeat.live" },
+  icons: {
+    icon: "/playbeat-logo.png",
+    apple: "/playbeat-logo.png",
+  },
   openGraph: {
     title: "PlayBeat TV",
     description: "Premium streaming for Live TV, Movies & Series.",

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Loader2, PlayCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/iptv/sidebar";
 import { Topbar } from "@/components/iptv/topbar";
@@ -19,6 +19,7 @@ import { PlayerModal } from "@/components/iptv/player-modal";
 import { SeriesDetailDialog } from "@/components/iptv/series-detail";
 import { AuthDialog } from "@/components/iptv/auth-dialog";
 import { BotHeartbeat } from "@/components/iptv/bot-heartbeat";
+import { Logo } from "@/components/iptv/logo";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -70,9 +71,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 bg-background" style={{ minHeight: "100vh" }}>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient text-white">
-          <PlayCircle className="h-8 w-8" />
-        </div>
+        <Logo size={56} />
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading PlayBeat TV…
@@ -139,15 +138,7 @@ export default function Home() {
       {/* Sticky footer */}
       <footer className="mt-auto border-t border-border bg-card/50 px-4 py-5 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-3 sm:flex-row">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <PlayCircle className="h-4 w-4" />
-            </div>
-            <span>
-              <span className="font-semibold text-foreground">PlayBeat TV</span>{" "}
-              · playbeat.live
-            </span>
-          </div>
+          <Logo size={28} />
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>© {new Date().getFullYear()} PlayBeat TV. All rights reserved.</span>
           </div>
@@ -173,14 +164,8 @@ function PublicShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => setView("home")}
-          className="flex items-center gap-2.5"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg brand-gradient text-white">
-            <PlayCircle className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-extrabold tracking-tight">
-            PlayBeat <span className="brand-text">TV</span>
-          </span>
+          <Logo size={36} />
         </button>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setView("home")}>

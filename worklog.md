@@ -126,3 +126,25 @@ Stage Summary (Agent Browser verified):
 - No console errors, no dev log errors. ✅
 
 Note: Google/Facebook OAuth will work the instant GOOGLE_CLIENT_ID/SECRET and FACEBOOK_CLIENT_ID/SECRET are added to .env. The buttons are wired to attempt real OAuth via NextAuth — they just need credentials.
+
+---
+Task ID: 28
+Agent: main (Z.ai Code)
+Task: Redesign logo and theme to match the uploaded PlayBeat TV logo.
+
+Work Log:
+- Analyzed the uploaded logo via VLM: retro TV icon with play button, signal waves, metallic silver frame, on solid black background. Colors: Primary Blue #0099FF, Secondary Blue #00BFFF, Silver #C0C0C0, Dark Navy #001F3F, Background #000000.
+- Copied the original logo PNG to /public/playbeat-logo.png (used as favicon).
+- Created a crisp SVG Logo component (src/components/iptv/logo.tsx) recreating the retro TV design: metallic silver frame with gradient, navy screen, blue play button with radial gradient, silver antenna with blue dot tips, signal waves with blue gradient, orbiting ring. Includes "PLAYBEAT" (silver) + "TV" (blue) text + "playbeat.live" (cyan) subtitle.
+- Redesigned globals.css theme: near-black background with blue tint, silver-white foreground, vibrant blue #0099FF primary, navy-gray secondary surfaces, blue-tinted accents. brand-gradient now = #0099FF → #00BFFF. Added brand-glow shadow effect.
+- Updated all components to use the Logo component: sidebar brand, topbar, auth dialog header, landing page header + footer, app shell footer, loading splash, public storefront shell.
+- Updated layout.tsx favicon to /playbeat-logo.png.
+
+Stage Summary (Agent Browser verified):
+- Logo SVG renders in sidebar, auth dialog, landing header, footer, loading splash. ✅
+- Brand text "PLAYBEAT" (silver) + "TV" (blue) + "playbeat.live" (cyan) all present. ✅
+- Brand gradient: linear-gradient(135deg, rgb(0,153,255) 0%, rgb(0,191,255)) — exact match to logo. ✅
+- Theme: dark black background, blue primary, silver text — matches logo aesthetic. ✅
+- Favicon: /playbeat-logo.png served (HTTP 200). ✅
+- No console errors, no page errors. ✅
+- Lint clean. ✅

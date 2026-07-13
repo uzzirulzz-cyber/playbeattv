@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "next-auth/react";
+import { Logo } from "@/components/iptv/logo";
 import type { ViewId } from "@/lib/types";
 
 interface NavItem {
@@ -53,17 +54,7 @@ export function Sidebar() {
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand */}
       <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg brand-gradient text-white shadow-sm">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
-        <div className="flex flex-col leading-none">
-          <span className="text-base font-extrabold tracking-tight text-sidebar-foreground">
-            PlayBeat <span className="brand-text">TV</span>
-          </span>
-          <span className="text-[11px] text-muted-foreground">playbeat.live</span>
-        </div>
+        <Logo size={36} />
         <button
           type="button"
           aria-label="Close menu"

@@ -51,12 +51,11 @@ export function Sidebar() {
 
   // Guests see browse views only; authenticated users see everything.
   const nav = NAV.filter((n) => {
-    if (n.adminOnly) return isAuthenticated && isAdmin;
-    // Favorites/History/Account require auth
+    if (n.adminOnly) return false; // handled separately below
     if (["favorites", "history", "account"].includes(n.id)) return isAuthenticated;
     return true;
   });
-  const adminItems = NAV.filter((n) => n.adminOnly);
+  const adminItems = isAuthenticated && isAdmin ? NAV.filter((n) => n.adminOnly) : [];
   return (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Brand */}

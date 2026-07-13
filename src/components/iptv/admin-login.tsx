@@ -49,12 +49,10 @@ export function AdminLogin() {
       }
 
       toast.success("Welcome, Admin!");
-      // Wait for the session to be established before navigating.
+      // Wait for the session cookie to be set, then reload at /admin.
       setTimeout(() => {
-        setView("admin");
-        // Navigate to /admin — the rewrite serves the app and the store shows AdminView.
-        window.location.href = "/admin";
-      }, 800);
+        window.location.href = "/admin?t=" + Date.now();
+      }, 1200);
     } catch {
       toast.error("Something went wrong.");
       setBusy(false);

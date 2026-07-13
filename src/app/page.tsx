@@ -106,7 +106,7 @@ export default function Home() {
   // Guests can browse Live TV, Movies, Series, Categories (10% free preview).
   // Favorites, History, Account, Admin still require auth.
   if (!isAuthenticated) {
-    const guestViews = ["live", "movies", "series", "categories", "storefront"];
+    const guestViews = ["live", "movies", "series", "categories", "storefront", "home"];
     if (!guestViews.includes(view)) {
       return (
         <>
@@ -115,7 +115,7 @@ export default function Home() {
         </>
       );
     }
-    // Fall through to the app shell for browseable views.
+    // Fall through to the app shell for browseable views (including home).
   }
 
   // Authenticated app shell.

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Tv,
   Film,
@@ -16,11 +18,18 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
-import { useHistory } from "@/hooks/use-iptv";
+import { useHistory, api } from "@/hooks/use-iptv";
 import { ContentCard } from "@/components/iptv/content-card";
 import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  liveToMedia,
+  vodToMedia,
+  type XtreamLiveStream,
+  type XtreamVodStream,
+} from "@/lib/xtream-client";
+import { CUSTOM_CATEGORIES } from "@/lib/categories";
 import type { MediaItem } from "@/lib/types";
 
 export function HomeView() {
@@ -28,6 +37,34 @@ export function HomeView() {
   const openAuth = useAppStore((s) => s.openAuth);
   const { user, isAuthenticated, plan, planExpires } = useAuth();
   const { data: history } = useHistory();
+
+  // Fetch featured live streams + movies for the home page.
+  const { data: liveStreams } = useQuery({
+    queryKey: ["streams", "live_streams"],
+    queryFn: () => api<unknown[]>("/api/xtream?action=live_streams"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: vodStreams } = useQuery({
+    queryKey: ["streams", "vod_streams"],
+    queryFn: () => api<unknown[]>("/api/xtream?action=vod_streams"),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const featuredLive: MediaItem[] = useMemo(() => {
+    if (!liveStreams) return [];
+    return (liveStreams as XtreamLiveStream[])
+      .filter((s) => s.stream_icon)
+      .slice(0, 18)
+      .map((s) => liveToMedia(s, null));
+  }, [liveStreams]);
+
+  const featuredMovies: MediaItem[] = useMemo(() => {
+    if (!vodStreams) return [];
+    return (vodStreams as XtreamVodStream[])
+      .filter((s) => s.stream_icon)
+      .slice(0, 18)
+      .map((s) => vodToMedia(s, null));
+  }, [vodStreams]);
 
   const recentHistory = (history ?? []).slice(0, 12).map<MediaItem>((h) => ({
     id: h.streamId,
@@ -186,6 +223,96 @@ export function HomeView() {
 
       {/* Ad banner */}
       <AdBanner />
+
+      {/* Featured Live TV channels */}
+      {featuredLive.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Tv className="h-5 w-5 text-primary" />
+              Featured Live Channels
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-muted-foreground"
+              onClick={() => setView("live")}
+            >
+              View all
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {featuredLive.slice(0, 12).map((item) => (
+              <ContentCard key={`fl-${item.id}`} item={item} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Featured Movies */}
+      {featuredMovies.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Film className="h-5 w-5 text-primary" />
+              Popular Movies
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-muted-foreground"
+              onClick={() => setView("movies")}
+            >
+              View all
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {featuredMovies.slice(0, 12).map((item) => (
+              <ContentCard key={`fm-${item.id}`} item={item} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Browse by Category (quick tiles) */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Globe className="h-5 w-5 text-primary" />
+            Browse by Category
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-muted-foreground"
+            onClick={() => setView("categories")}
+          >
+            All categories
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {CUSTOM_CATEGORIES.slice(0, 10).map((cat) => (
+            <button
+              key={cat.slug}
+              type="button"
+              onClick={() => setView("categories")}
+              className={`group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border border-border bg-gradient-to-br ${cat.color} p-4 text-left transition-all hover:border-primary/50 hover:ring-2 hover:ring-primary/20`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-card/80 text-foreground">
+                <Tv className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">{cat.name}</h3>
+                <p className="text-xs text-muted-foreground">Browse</p>
+              </div>
+              <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Continue watching (only for signed-in) */}
       {isAuthenticated ? (

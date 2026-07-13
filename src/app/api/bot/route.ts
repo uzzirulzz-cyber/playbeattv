@@ -5,6 +5,7 @@ import { authenticateXtream } from "@/lib/xtream";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 // The bot handler runs every 30s (pinged by a cron/keep-alive service).
 // It performs health checks, syncs payment status, and prunes expired sessions.

@@ -128,9 +128,17 @@ export async function GET(req: NextRequest) {
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
-    // Cache list responses in the browser for 5 minutes to speed up navigation.
+    // Cache list responses in the browser for 5 minutes — BUT only for
+    // non-gated responses (member). Guest responses (10% gated) must not be
+    // cached at CDN level, otherwise members would get gated content and
+    // vice versa. Use private cache for guests, public for members.
     if (["live_streams", "vod_streams", "series", "live_categories", "vod_categories", "series_categories"].includes(action)) {
-      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+      if (isMember) {
+        response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600");
+      } else {
+        // Guests get gated content — don't cache at CDN (would leak full list)
+        response.headers.set("Cache-Control", "no-store");
+      }
     }
     return response;
   } catch (err) {

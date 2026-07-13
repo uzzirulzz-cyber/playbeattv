@@ -148,3 +148,25 @@ Stage Summary (Agent Browser verified):
 - Favicon: /playbeat-logo.png served (HTTP 200). ✅
 - No console errors, no page errors. ✅
 - Lint clean. ✅
+
+---
+Task ID: 29
+Agent: main (Z.ai Code)
+Task: Connect MongoDB Atlas (multiple attempts, finally succeeded).
+
+Work Log:
+- Attempted 3 different clusters/credentials provided by user before getting the correct one:
+  1. ghar.ahbfod0.mongodb.net / playbeatdigitalxx — SCRAM auth failed (user didn't exist)
+  2. cluster0.75ddnhu.mongodb.net / uzzirulzz_db_user — SCRAM auth failed (API key, not DB password)
+  3. Atlas SQL connection string — wrong type (SQL connector, not app connection)
+  4. playbeat.umqpdyx.mongodb.net / max11 — SUCCESS with password NciH9bevWbkDz5IT
+- Switched Prisma provider from "sqlite" to "mongodb" and URL to env("MONGODB_URI").
+- Ran prisma db push — schema synced to MongoDB Atlas (13s), all indexes created (User email, VerificationToken, CustomCategory slug, Favorite, History unique indexes).
+- Seeded default playlist (njqqh.mor-esp.cc backend).
+- Verified: bot handler returns ok:true, backend:online, users:1. App HTTP 200. Lint clean.
+
+Stage Summary:
+- MongoDB Atlas is LIVE and connected: mongodb+srv://max11:***@playbeat.umqpdyx.mongodb.net/playbeat
+- All collections created with proper indexes.
+- App fully functional on MongoDB Atlas (was on SQLite).
+- Committed and pushed to GitHub (e90d8ac).

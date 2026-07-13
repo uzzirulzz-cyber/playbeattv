@@ -50,5 +50,13 @@ test
 prompt
 
 server.log
+
+# database
+db/*.db
+db/*.db-journal
+
 # Skills directory
 /skills/
+
+# uploads
+/upload/

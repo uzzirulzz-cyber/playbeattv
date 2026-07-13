@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { Shield, Lock, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Shield, Lock, Loader2, ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { Logo } from "@/components/iptv/logo";
 import { Button } from "@/components/ui/button";
@@ -16,26 +16,31 @@ export function AdminLogin() {
   const [showPass, setShowPass] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
+    setError(null);
     try {
-      // Verify the admin password server-side.
+      // Step 1: Verify the admin password server-side.
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        toast.error(data.error || "Invalid password.");
+        const msg = data.error || "Invalid password.";
+        setError(msg);
+        toast.error(msg);
         setBusy(false);
         return;
       }
 
-      // Sign in with the admin credentials (email + admin password).
+      // Step 2: Sign in with the admin credentials (email + admin password).
       const signInRes = await signIn("credentials", {
         email: data.adminEmail,
         password: data.adminPassword,
@@ -43,7 +48,9 @@ export function AdminLogin() {
       });
 
       if (signInRes?.error) {
-        toast.error("Admin verified, but sign-in failed. Please try again.");
+        const msg = "Admin verified, but sign-in failed. Please try again.";
+        setError(msg);
+        toast.error(msg);
         setBusy(false);
         return;
       }
@@ -52,9 +59,11 @@ export function AdminLogin() {
       // Wait for the session cookie to be set, then reload at /admin.
       setTimeout(() => {
         window.location.href = "/admin?t=" + Date.now();
-      }, 1200);
-    } catch {
-      toast.error("Something went wrong.");
+      }, 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(msg);
+      toast.error(msg);
       setBusy(false);
     }
   };
@@ -114,6 +123,13 @@ export function AdminLogin() {
                 </button>
               </div>
             </div>
+
+            {error ? (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            ) : null}
 
             <Button
               type="submit"

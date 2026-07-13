@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, withRetry } from "@/lib/db";
 
 export interface CurrentUser {
   id: string;
@@ -13,21 +13,28 @@ export interface CurrentUser {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      image: true,
-      role: true,
-      plan: true,
-      planExpires: true,
-    },
-  });
-  return user;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return null;
+    const user = await withRetry(() =>
+      db.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          role: true,
+          plan: true,
+          planExpires: true,
+        },
+      })
+    );
+    return user;
+  } catch (err) {
+    console.error("getCurrentUser error:", err);
+    return null;
+  }
 }
 
 export async function requireUser(): Promise<CurrentUser> {

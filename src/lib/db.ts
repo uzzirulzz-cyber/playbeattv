@@ -48,10 +48,62 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// Create Prisma client with connection pooling and retry-friendly settings.
+function createPrismaClient() {
+  return new PrismaClient({
     log: ['error', 'warn'],
+    datasources: {
+      db: {
+        url: process.env.MONGODB_URI,
+      },
+    },
   })
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+// Initialize with retry logic for cold starts on Vercel.
+let client: PrismaClient
+if (globalForPrisma.prisma) {
+  client = globalForPrisma.prisma
+} else {
+  client = createPrismaClient()
+  if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = client
+  }
+}
+
+export const db = client
+
+/**
+ * Execute a database operation with automatic retry on connection errors.
+ * Vercel serverless functions can have cold-start connection issues — this
+ * retries up to 3 times with exponential backoff.
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      const msg = err instanceof Error ? err.message : String(err)
+      // Retry on connection errors (DNS, timeout, connection reset).
+      const isConnectionError =
+        msg.includes("DNS") ||
+        msg.includes("connection") ||
+        msg.includes("timeout") ||
+        msg.includes("ConnectorError") ||
+        msg.includes("Timed out") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("socket")
+      if (!isConnectionError || attempt === retries - 1) {
+        throw err
+      }
+      // Exponential backoff: 500ms, 1000ms, 2000ms
+      await new Promise((r) => setTimeout(r, 500 * 2 ** attempt))
+    }
+  }
+  throw lastError
+}

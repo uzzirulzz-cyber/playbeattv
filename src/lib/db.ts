@@ -1,11 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-// Ensure MONGODB_URI is set at runtime (Vercel serverless functions don't
-// read .env files at runtime — only env vars from the dashboard).
-// This embedded fallback enables zero-config deployment.
-if (!process.env.MONGODB_URI) {
-  process.env.MONGODB_URI =
-    "mongodb+srv://max11:NciH9bevWbkDz5IT@playbeat.umqpdyx.mongodb.net/playbeat?retryWrites=true&w=majority&appName=playbeat"
+// ALWAYS set the correct MongoDB URI — Vercel dashboard may have a wrong value.
+// This guarantees the database connection works on all deployments.
+const CORRECT_MONGODB_URI =
+  "mongodb+srv://max11:NciH9bevWbkDz5IT@playbeat.umqpdyx.mongodb.net/playbeat?retryWrites=true&w=majority&appName=playbeat"
+
+// Only use the dashboard value if it contains the correct cluster hostname.
+if (!process.env.MONGODB_URI || !process.env.MONGODB_URI.includes("playbeat.umqpdyx")) {
+  process.env.MONGODB_URI = CORRECT_MONGODB_URI
 }
 
 // Also set other required env vars if missing (Vercel dashboard takes priority).

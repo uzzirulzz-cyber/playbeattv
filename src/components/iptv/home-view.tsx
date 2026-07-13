@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Tv,
   Film,
@@ -8,54 +7,27 @@ import {
   Heart,
   History,
   ChevronRight,
-  CalendarClock,
-  Users,
-  Server,
   Play,
-  Radio,
+  Crown,
+  Sparkles,
+  Zap,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { api, useActivePlaylist, useHistory } from "@/hooks/use-iptv";
+import { useAuth } from "@/hooks/use-auth";
+import { useHistory } from "@/hooks/use-iptv";
 import { ContentCard } from "@/components/iptv/content-card";
 import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { MediaItem } from "@/lib/types";
 
-interface AuthInfo {
-  user_info?: {
-    status?: string;
-    auth?: number;
-    exp_date?: string | null;
-    active_cons?: string;
-    max_connections?: string;
-    username?: string;
-  };
-  server_info?: {
-    url?: string;
-    port?: string;
-    timezone?: string;
-  };
-}
-
 export function HomeView() {
   const setView = useAppStore((s) => s.setView);
-  const setSettingsOpen = useAppStore((s) => s.setSettingsOpen);
-  const { data: playlistData } = useActivePlaylist();
+  const openAuth = useAppStore((s) => s.openAuth);
+  const { user, isAuthenticated, plan, planExpires } = useAuth();
   const { data: history } = useHistory();
-  const active = playlistData?.active;
-
-  const { data: auth } = useQuery<AuthInfo>({
-    queryKey: ["xtream-auth"],
-    queryFn: () => api<AuthInfo>("/api/xtream?action=auth"),
-    retry: 0,
-  });
-
-  const online =
-    auth?.user_info?.status === "Active" || auth?.user_info?.auth === 1;
-  const exp = auth?.user_info?.exp_date
-    ? new Date(Number(auth.user_info.exp_date) * 1000)
-    : null;
 
   const recentHistory = (history ?? []).slice(0, 12).map<MediaItem>((h) => ({
     id: h.streamId,
@@ -65,19 +37,22 @@ export function HomeView() {
     streamUrl: h.streamUrl,
   }));
 
+  const hasActivePlan =
+    plan && plan !== "free" && (!planExpires || new Date(planExpires).getTime() > Date.now());
+
   const quickLinks = [
     {
       id: "live" as const,
       label: "Live TV",
-      desc: "Channels & live streams",
+      desc: "10,000+ live channels",
       icon: Tv,
-      gradient: "from-red-500/20 to-red-500/5",
-      iconColor: "text-red-400",
+      gradient: "from-rose-500/20 to-rose-500/5",
+      iconColor: "text-rose-400",
     },
     {
       id: "movies" as const,
       label: "Movies",
-      desc: "On-demand films",
+      desc: "On-demand blockbusters",
       icon: Film,
       gradient: "from-amber-500/20 to-amber-500/5",
       iconColor: "text-amber-400",
@@ -85,92 +60,97 @@ export function HomeView() {
     {
       id: "series" as const,
       label: "Series",
-      desc: "TV shows & episodes",
+      desc: "Binge-worthy shows",
       icon: Clapperboard,
-      gradient: "from-primary/25 to-primary/5",
-      iconColor: "text-primary",
+      gradient: "from-fuchsia-500/20 to-fuchsia-500/5",
+      iconColor: "text-fuchsia-400",
     },
+  ];
+
+  const features = [
+    { icon: Globe, title: "10,000+ Channels", desc: "Live TV from around the globe" },
+    { icon: Zap, title: "4K Ultra HD", desc: "Crystal-clear streaming quality" },
+    { icon: ShieldCheck, title: "Secure & Private", desc: "Encrypted, ad-light playback" },
+    { icon: Sparkles, title: "Updated Daily", desc: "Fresh movies & series added" },
   ];
 
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6 sm:p-8">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-6 sm:p-10">
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-fuchsia-500/10 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-2.5 w-2.5 items-center justify-center">
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  online ? "bg-emerald-500" : "bg-red-500"
-                }`}
-              >
-                {online ? (
-                  <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-emerald-500/60" />
-                ) : null}
-              </span>
-            </span>
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {online ? "Account Active" : "Account Offline"}
-            </span>
-          </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Welcome to HypoTV
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Welcome to PlayBeat TV
+          </span>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">
+            Endless entertainment.{" "}
+            <span className="brand-text">One platform.</span>
           </h1>
-          <p className="mt-1 max-w-xl text-muted-foreground">
-            {active
-              ? `Streaming from “${active.name}”. Browse live TV, movies and series below.`
-              : "No playlist configured yet. Add your Xtream credentials to start watching."}
+          <p className="mt-3 max-w-xl text-muted-foreground sm:text-lg">
+            Stream Live TV, Movies and Series in stunning quality — anywhere,
+            anytime. {isAuthenticated ? "Pick up where you left off below." : "Sign up free to start watching."}
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Button onClick={() => setView("live")} className="gap-1.5">
-              <Play className="h-4 w-4 fill-current" />
-              Start Watching
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSettingsOpen(true)}
-              className="gap-1.5"
-            >
-              <Server className="h-4 w-4" />
-              Manage Playlist
-            </Button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!isAuthenticated ? (
+              <>
+                <Button
+                  className="gap-1.5 brand-gradient text-white"
+                  onClick={() => openAuth("signup")}
+                >
+                  <Play className="h-4 w-4 fill-current" />
+                  Start Watching
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setView("storefront")}
+                  className="gap-1.5"
+                >
+                  <Crown className="h-4 w-4" />
+                  View Plans
+                </Button>
+              </>
+            ) : !hasActivePlan ? (
+              <Button
+                className="gap-1.5 brand-gradient text-white"
+                onClick={() => setView("storefront")}
+              >
+                <Crown className="h-4 w-4" />
+                Subscribe Now
+              </Button>
+            ) : (
+              <Button
+                className="gap-1.5 brand-gradient text-white"
+                onClick={() => setView("live")}
+              >
+                <Play className="h-4 w-4 fill-current" />
+                Browse Live TV
+              </Button>
+            )}
           </div>
 
-          {/* account meta */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <AccountStat
-              icon={CalendarClock}
-              label="Expires"
-              value={
-                exp ? exp.toLocaleDateString() : online ? "—" : "N/A"
-              }
-            />
-            <AccountStat
-              icon={Users}
-              label="Connections"
-              value={
-                auth?.user_info?.active_cons &&
-                auth?.user_info?.max_connections
-                  ? `${auth.user_info.active_cons}/${auth.user_info.max_connections}`
-                  : "—"
-              }
-            />
-            <AccountStat
-              icon={Server}
-              label="Server"
-              value={auth?.server_info?.url ?? "—"}
-            />
-            <AccountStat
-              icon={Radio}
-              label="Timezone"
-              value={
-                auth?.server_info?.timezone
-                  ? auth.server_info.timezone.split("/").pop() ?? "—"
-                  : "—"
-              }
-            />
+          {/* Feature strip — NO account/server details */}
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={f.title}
+                  className="flex items-center gap-2.5 rounded-lg border border-border bg-card/60 p-3 backdrop-blur"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{f.title}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {f.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -207,99 +187,91 @@ export function HomeView() {
       {/* Ad banner */}
       <AdBanner />
 
-      {/* Continue watching */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <History className="h-5 w-5 text-primary" />
-            Continue Watching
-          </h2>
-          {history && history.length > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1 text-muted-foreground"
-              onClick={() => setView("history")}
-            >
-              See all
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          ) : null}
-        </div>
-        {history && history.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {recentHistory.map((item) => (
-              <ContentCard
-                key={`h-${item.type}-${item.id}`}
-                item={item}
-              />
-            ))}
+      {/* Continue watching (only for signed-in) */}
+      {isAuthenticated ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <History className="h-5 w-5 text-primary" />
+              Continue Watching
+            </h2>
+            {history && history.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 text-muted-foreground"
+                onClick={() => setView("history")}
+              >
+                See all
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : null}
           </div>
-        ) : (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-              <History className="mb-2 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                Your watch history will appear here.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+          {history && history.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {recentHistory.map((item) => (
+                <ContentCard key={`h-${item.type}-${item.id}`} item={item} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                <History className="mb-2 h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  Your watch history will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      ) : null}
 
-      {/* Quick favorites teaser handled by favorites view */}
+      {/* Subscription CTA */}
+      {!hasActivePlan ? (
+        <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 to-fuchsia-500/10 p-6 sm:p-8">
+          <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-bold">
+                <Crown className="h-5 w-5 text-amber-400" />
+                Unlock everything
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Choose a plan that fits you. Cancel anytime — no hidden fees.
+              </p>
+            </div>
+            <Button
+              className="gap-1.5 brand-gradient text-white"
+              onClick={() => setView("storefront")}
+            >
+              <Crown className="h-4 w-4" />
+              View Plans
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Quick actions */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Heart className="h-5 w-5 text-red-400" />
+            <Heart className="h-5 w-5 text-rose-400" />
             Quick Actions
           </h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <QuickAction
-            icon={Heart}
-            label="Favorites"
-            onClick={() => setView("favorites")}
-          />
-          <QuickAction
-            icon={History}
-            label="History"
-            onClick={() => setView("history")}
-          />
-          <QuickAction
-            icon={Tv}
-            label="Live TV"
-            onClick={() => setView("live")}
-          />
-          <QuickAction
-            icon={Clapperboard}
-            label="Series"
-            onClick={() => setView("series")}
-          />
+          <QuickAction icon={Heart} label="Favorites" onClick={() => setView("favorites")} />
+          <QuickAction icon={History} label="History" onClick={() => setView("history")} />
+          <QuickAction icon={Tv} label="Live TV" onClick={() => setView("live")} />
+          <QuickAction icon={Crown} label="Subscribe" onClick={() => setView("storefront")} />
         </div>
       </section>
-    </div>
-  );
-}
 
-function AccountStat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border bg-card/60 p-3 backdrop-blur">
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          {label}
+      {/* Footer note for authenticated users */}
+      {isAuthenticated ? (
+        <p className="text-center text-xs text-muted-foreground">
+          Signed in as {user?.email}
         </p>
-        <p className="truncate text-sm font-medium">{value}</p>
-      </div>
+      ) : null}
     </div>
   );
 }

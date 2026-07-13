@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Play, Star, Calendar, Clock } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { api, useActivePlaylist } from "@/hooks/use-iptv";
+import { api } from "@/hooks/use-iptv";
 import { buildStreamUrl } from "@/lib/xtream-client";
 
 interface SeriesInfo {
@@ -67,8 +67,6 @@ function formatDuration(secs?: number) {
 export function SeriesDetailDialog() {
   const { seriesDetail, closeSeriesDetail, openPlayer } = useAppStore();
   const [season, setSeason] = useState<string>("1");
-  const { data: playlistData } = useActivePlaylist();
-  const creds = playlistData?.active;
 
   const { data, isLoading } = useQuery<SeriesInfo>({
     queryKey: ["series-info", seriesDetail.seriesId],
@@ -205,16 +203,14 @@ export function SeriesDetailDialog() {
 
                 <div className="max-h-[40vh] space-y-2 overflow-y-auto pr-1 scrollbar-thin">
                   {episodes.map((ep) => {
-                    const streamUrl = creds
-                      ? buildStreamUrl(
-                          creds.dns,
-                          creds.username,
-                          creds.password,
-                          "series",
-                          ep.id,
-                          ep.container_extension
-                        )
-                      : "";
+                    const streamUrl = buildStreamUrl(
+                      "",
+                      "",
+                      "",
+                      "series",
+                      ep.id,
+                      ep.container_extension
+                    );
                     return (
                       <button
                         key={ep.id}

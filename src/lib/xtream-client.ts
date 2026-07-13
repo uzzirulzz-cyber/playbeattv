@@ -1,37 +1,24 @@
 import type { MediaItem, StreamType } from "@/lib/types";
 
-function normalizeDns(dns: string): string {
-  let d = dns.trim();
-  if (!/^https?:\/\//i.test(d)) {
-    d = "http://" + d;
-  }
-  return d.replace(/\/+$/, "");
-}
-
-export interface PlaylistCredentials {
-  dns: string;
-  username: string;
-  password: string;
-}
-
-/** Build a playable stream URL from the active playlist credentials. */
+/**
+ * Build a *proxied* stream URL that hides the IPTV backend credentials.
+ * The browser only ever sees `/api/stream?...`; the server reconstructs
+ * the real upstream URL from the (admin-managed) active playlist.
+ */
 export function buildStreamUrl(
-  dns: string,
-  username: string,
-  password: string,
+  _dns: string,
+  _username: string,
+  _password: string,
   type: StreamType,
   streamId: string | number,
   containerExtension?: string
 ): string {
-  const base = normalizeDns(dns);
-  if (type === "live") {
-    return `${base}/live/${username}/${password}/${streamId}.m3u8`;
-  }
-  const ext = containerExtension || "mp4";
-  if (type === "movie") {
-    return `${base}/movie/${username}/${password}/${streamId}.${ext}`;
-  }
-  return `${base}/series/${username}/${password}/${streamId}.${ext}`;
+  const params = new URLSearchParams({
+    type,
+    id: String(streamId),
+  });
+  if (containerExtension) params.set("ext", containerExtension);
+  return `/api/stream?${params.toString()}`;
 }
 
 export interface XtreamLiveStream {
@@ -64,27 +51,21 @@ export interface XtreamSeries {
 
 export function liveToMedia(
   s: XtreamLiveStream,
-  creds: PlaylistCredentials
+  _creds: unknown
 ): MediaItem {
   return {
     id: String(s.stream_id),
     name: s.name,
     type: "live",
     logo: s.stream_icon,
-    streamUrl: buildStreamUrl(
-      creds.dns,
-      creds.username,
-      creds.password,
-      "live",
-      s.stream_id
-    ),
+    streamUrl: buildStreamUrl("", "", "", "live", s.stream_id),
     categoryId: s.category_id,
   };
 }
 
 export function vodToMedia(
   s: XtreamVodStream,
-  creds: PlaylistCredentials
+  _creds: unknown
 ): MediaItem {
   return {
     id: String(s.stream_id),
@@ -92,9 +73,9 @@ export function vodToMedia(
     type: "movie",
     logo: s.stream_icon,
     streamUrl: buildStreamUrl(
-      creds.dns,
-      creds.username,
-      creds.password,
+      "",
+      "",
+      "",
       "movie",
       s.stream_id,
       s.container_extension
@@ -107,7 +88,7 @@ export function vodToMedia(
 
 export function seriesToMedia(
   s: XtreamSeries,
-  creds: PlaylistCredentials
+  _creds: unknown
 ): MediaItem {
   return {
     id: String(s.series_id),
@@ -115,14 +96,7 @@ export function seriesToMedia(
     type: "series",
     logo: s.cover,
     plot: s.plot,
-    streamUrl: buildStreamUrl(
-      creds.dns,
-      creds.username,
-      creds.password,
-      "series",
-      s.series_id,
-      "mp4"
-    ),
+    streamUrl: buildStreamUrl("", "", "", "series", s.series_id, "mp4"),
     categoryId: s.category_id,
     rating: s.rating_5based ?? (s.rating ? Number(s.rating) : undefined),
   };

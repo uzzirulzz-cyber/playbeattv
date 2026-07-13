@@ -4,7 +4,10 @@ export type ViewId =
   | "movies"
   | "series"
   | "favorites"
-  | "history";
+  | "history"
+  | "storefront"
+  | "account"
+  | "admin";
 
 export type StreamType = "live" | "movie" | "series";
 
@@ -37,3 +40,5 @@ export interface SeriesDetailState {
   cover?: string;
   plot?: string;
 }
+
+export type AuthMode = "signin" | "signup";

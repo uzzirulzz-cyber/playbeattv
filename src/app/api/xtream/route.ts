@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActivePlaylist } from "@/lib/playlist";
+import { requireUser } from "@/lib/session";
 import {
   authenticateXtream,
   getLiveCategories,
@@ -15,6 +16,13 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  // Auth gate — only signed-in users can browse content.
+  try {
+    await requireUser();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const playlist = await getActivePlaylist();
   if (!playlist) {
     return NextResponse.json(

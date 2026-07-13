@@ -1,23 +1,63 @@
 "use client";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Loader2, PlayCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/iptv/sidebar";
 import { Topbar } from "@/components/iptv/topbar";
 import { HomeView } from "@/components/iptv/home-view";
 import { BrowserView } from "@/components/iptv/browser-view";
 import { FavoritesView } from "@/components/iptv/favorites-view";
 import { HistoryView } from "@/components/iptv/history-view";
+import { StorefrontView } from "@/components/iptv/storefront-view";
+import { AccountView } from "@/components/iptv/account-view";
+import { AdminView } from "@/components/iptv/admin-view";
+import { LandingView } from "@/components/iptv/landing-view";
 import { PlayerModal } from "@/components/iptv/player-modal";
 import { SeriesDetailDialog } from "@/components/iptv/series-detail";
-import { SettingsDialog } from "@/components/iptv/settings-dialog";
+import { AuthDialog } from "@/components/iptv/auth-dialog";
 import { useAppStore } from "@/lib/store";
-import { Radio, Github, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
   const view = useAppStore((s) => s.view);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+  const { isAuthenticated, isLoading } = useAuth();
 
+  // Loading splash while the session resolves.
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient text-white">
+          <PlayCircle className="h-8 w-8" />
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading PlayBeat TV…
+        </div>
+      </div>
+    );
+  }
+
+  // Public landing experience for signed-out visitors.
+  // (Storefront plans are visible, but browsing/streaming requires an account.)
+  if (!isAuthenticated) {
+    return (
+      <>
+        {view === "storefront" ? (
+          <PublicShell>
+            <StorefrontView />
+          </PublicShell>
+        ) : (
+          <LandingView />
+        )}
+        <AuthDialog />
+      </>
+    );
+  }
+
+  // Authenticated app shell.
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="flex flex-1">
@@ -46,6 +86,9 @@ export default function Home() {
               {view === "series" ? <BrowserView type="series" /> : null}
               {view === "favorites" ? <FavoritesView /> : null}
               {view === "history" ? <HistoryView /> : null}
+              {view === "storefront" ? <StorefrontView /> : null}
+              {view === "account" ? <AccountView /> : null}
+              {view === "admin" ? <AdminView /> : null}
             </div>
           </main>
         </div>
@@ -56,21 +99,15 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center justify-between gap-3 sm:flex-row">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <Radio className="h-4 w-4" />
+              <PlayCircle className="h-4 w-4" />
             </div>
             <span>
-              <span className="font-semibold text-foreground">HypoTV</span>{" "}
-              IPTV Player · Xtream Codes
+              <span className="font-semibold text-foreground">PlayBeat TV</span>{" "}
+              · playbeat.live
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Streams proxied via secure API
-            </span>
-            <span className="hidden sm:inline">
-              Use responsibly with content you are authorized to access.
-            </span>
+            <span>© {new Date().getFullYear()} PlayBeat TV. All rights reserved.</span>
           </div>
         </div>
       </footer>
@@ -78,7 +115,46 @@ export default function Home() {
       {/* Overlays */}
       <PlayerModal />
       <SeriesDetailDialog />
-      <SettingsDialog />
+      <AuthDialog />
+    </div>
+  );
+}
+
+/** Minimal shell for the public storefront (top bar + content). */
+function PublicShell({ children }: { children: React.ReactNode }) {
+  const setView = useAppStore((s) => s.setView);
+  const openAuth = useAppStore((s) => s.openAuth);
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
+        <button
+          type="button"
+          onClick={() => setView("home")}
+          className="flex items-center gap-2.5"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg brand-gradient text-white">
+            <PlayCircle className="h-5 w-5" />
+          </div>
+          <span className="text-lg font-extrabold tracking-tight">
+            PlayBeat <span className="brand-text">TV</span>
+          </span>
+        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setView("home")}>
+            Back to home
+          </Button>
+          <Button
+            size="sm"
+            className="brand-gradient text-white"
+            onClick={() => openAuth("signup")}
+          >
+            Sign up free
+          </Button>
+        </div>
+      </header>
+      <main className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+      </main>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Search, ChevronDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { api, useActivePlaylist } from "@/hooks/use-iptv";
+import { api } from "@/hooks/use-iptv";
 import {
   liveToMedia,
   vodToMedia,
@@ -29,8 +29,6 @@ const PAGE_SIZE = 48;
 export function BrowserView({ type }: BrowserViewProps) {
   const selectedCategoryId = useAppStore((s) => s.selectedCategoryId);
   const search = useAppStore((s) => s.search);
-  const { data: playlistData } = useActivePlaylist();
-  const creds = playlistData?.active;
 
   const action =
     type === "live"
@@ -58,19 +56,15 @@ export function BrowserView({ type }: BrowserViewProps) {
   });
 
   const items: MediaItem[] = useMemo(() => {
-    if (!rawStreams || !creds) return [];
+    if (!rawStreams) return [];
     if (type === "live") {
-      return (rawStreams as XtreamLiveStream[]).map((s) =>
-        liveToMedia(s, creds)
-      );
+      return (rawStreams as XtreamLiveStream[]).map((s) => liveToMedia(s, null));
     }
     if (type === "movie") {
-      return (rawStreams as XtreamVodStream[]).map((s) =>
-        vodToMedia(s, creds)
-      );
+      return (rawStreams as XtreamVodStream[]).map((s) => vodToMedia(s, null));
     }
-    return (rawStreams as XtreamSeries[]).map((s) => seriesToMedia(s, creds));
-  }, [rawStreams, creds, type]);
+    return (rawStreams as XtreamSeries[]).map((s) => seriesToMedia(s, null));
+  }, [rawStreams, type]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -92,7 +86,7 @@ export function BrowserView({ type }: BrowserViewProps) {
     return list;
   }, [items, selectedCategoryId, search]);
 
-  const loading = streamsLoading || !creds;
+  const loading = streamsLoading;
 
   // Signature so the paginated section resets when filters change
   const pageKey = `${type}|${selectedCategoryId}|${search.trim().toLowerCase()}`;

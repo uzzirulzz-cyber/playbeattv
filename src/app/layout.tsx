@@ -17,13 +17,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HypoTV — IPTV Player",
+  title: "PlayBeat TV — Stream Live TV, Movies & Series",
   description:
-    "Stream Live TV, Movies and Series from your Xtream playlist with a modern, fast web player.",
-  keywords: ["IPTV", "Xtream", "Live TV", "Movies", "Series", "Player"],
-  authors: [{ name: "HypoTV" }],
-  icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    "PlayBeat TV — premium streaming for Live TV, Movies and Series. Watch anywhere, anytime.",
+  keywords: ["PlayBeat TV", "IPTV", "Live TV", "Movies", "Series", "Streaming"],
+  authors: [{ name: "PlayBeat TV" }],
+  metadataBase: new URL("https://playbeat.live"),
+  alternates: { canonical: "https://playbeat.live" },
+  openGraph: {
+    title: "PlayBeat TV",
+    description: "Premium streaming for Live TV, Movies & Series.",
+    url: "https://playbeat.live",
+    siteName: "PlayBeat TV",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PlayBeat TV",
+    description: "Premium streaming for Live TV, Movies & Series.",
   },
 };
 

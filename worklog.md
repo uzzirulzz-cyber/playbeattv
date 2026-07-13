@@ -46,3 +46,29 @@ Stage Summary:
 - AdSense fully wired: script + ads.txt + manual ad units (banner + in-feed) across all browse views.
 - Real ads will fill once the domain is approved in the AdSense dashboard; until then labeled placeholders keep the layout intentional.
 - No impact on existing streaming functionality; no console errors.
+
+---
+Task ID: 9-16
+Agent: main (Z.ai Code)
+Task: Transform HypoTV into PLAYBEAT TV (playbeat.live) — branded consumer service with sign-up (Google/Facebook/Email), storefront, admin panel, and all IPTV backend details hidden from users.
+
+Work Log:
+- Auth: added Prisma User/Account/Session/VerificationToken/Subscription models; reworked Favorite/History to per-user (userId). Installed bcryptjs + @next-auth/prisma-adapter. Built NextAuth config (JWT strategy; Credentials + Google + Facebook providers, OAuth auto-enabled by env). Register API route with bcrypt hashing. Admin bootstrap: email admin@playbeat.live auto-becomes admin on signup. Session helpers (requireUser/requireAdmin).
+- Credential hiding: built /api/stream server-side proxy that reconstructs the real Xtream URL from the admin-managed active playlist. Rewrites HLS m3u8 playlists so segment URLs route back through the proxy (resolved against the redirect/load-balancer final origin via upstream.url). Forwards Set-Cookie session cookies from the m3u8 fetch to segment requests via an in-memory token store. Browser only ever sees /api/stream?... (blob: MSE URL) — zero credentials exposed.
+- Gated /api/xtream (content) behind auth; /api/playlists + /api/playlists/test behind admin. Client stream-URL builder now emits proxied /api/stream URLs (no creds). Removed useActivePlaylist credential fetching from client.
+- Rebrand: new rose/fuchsia-on-dark theme (globals.css), PlayBeat TV metadata (playbeat.live), sidebar brand, topbar (plan badge / Subscribe CTA / Sign in), home (hero + features, NO account stats), landing view for signed-out visitors, footer.
+- Views: HomeView (CTAs, continue-watching gated by auth), BrowserView (live/movies/series, no creds needed), FavoritesView, HistoryView (per-user), StorefrontView (Monthly/Quarterly/Annual plans + subscribe), AccountView (profile/plan/device setup, no backend creds), AdminView (stats, users table, backend config = only place credentials are managed), LandingView (marketing page for signed-out).
+- AuthDialog: Sign In/Sign Up tabs, Google + Facebook + Email (email fully functional; OAuth shows "coming soon" until env creds added), password show/hide.
+- Player: fixed HLS detection for proxied live URLs (type=live); added muted-autoplay fallback.
+- Page: auth gate — loading splash → landing (signed-out) / app shell (signed-in). PublicShell lets signed-out visitors view plans.
+
+Stage Summary (Agent Browser verified):
+- Landing page renders with PlayBeat TV branding for signed-out visitors.
+- Sign-up flow works: created admin@playbeat.live (bootstrapped admin) and jane@example.com (regular user). Both sign in.
+- Role gating: admin sees "Admin Panel" nav; regular user does not. AdminView shows stats (users, subs, favs, history, backend status) + users table + backend config. Regular users hitting admin see "permission denied".
+- Backend details FULLY HIDDEN: page text contains none of FHHNUEH, 2HSJRV6, njqqh.mor-esp.cc, Expires, Connections, 0/1, UTC, 7/13/2026 (verified []). Video source is a blob: URL; network shows only /api/stream?...
+- STREAMING WORKS THROUGH PROXY: movie played (currentTime advancing, duration 6471s); live stream played (currentTime advancing, segments 200, 20s buffered). Credentials never exposed.
+- Storefront: 3 plans (Monthly/Quarterly/Annual) with subscribe. Account view shows plan + expiry + device setup (no creds).
+- Sign out returns to landing (auth gate confirmed).
+- Mobile responsive; sticky footer at document bottom. No console/page errors (only expected autoplay-policy notice, handled by muted fallback).
+- NOTE: backend playlist has max_connections=1 (only 1 concurrent stream). Google/Facebook OAuth need GOOGLE_CLIENT_ID/SECRET + FACEBOOK_CLIENT_ID/SECRET in .env to enable (buttons show "coming soon" until then).

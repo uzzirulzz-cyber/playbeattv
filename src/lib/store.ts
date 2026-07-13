@@ -5,6 +5,7 @@ import type {
   PlayerState,
   SeriesDetailState,
   ViewId,
+  AuthMode,
 } from "@/lib/types";
 
 interface AppState {
@@ -20,8 +21,10 @@ interface AppState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 
-  settingsOpen: boolean;
-  setSettingsOpen: (open: boolean) => void;
+  authOpen: boolean;
+  authMode: AuthMode;
+  openAuth: (mode?: AuthMode) => void;
+  closeAuth: () => void;
 
   player: PlayerState;
   openPlayer: (p: Omit<PlayerState, "open">) => void;
@@ -30,15 +33,11 @@ interface AppState {
   seriesDetail: SeriesDetailState;
   openSeriesDetail: (s: Omit<SeriesDetailState, "open">) => void;
   closeSeriesDetail: () => void;
-
-  refreshKey: number;
-  bumpRefresh: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   view: "home",
-  setView: (v) =>
-    set({ view: v, selectedCategoryId: "all", search: "" }),
+  setView: (v) => set({ view: v, selectedCategoryId: "all", search: "" }),
 
   selectedCategoryId: "all",
   setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
@@ -49,8 +48,10 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarOpen: false,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  settingsOpen: false,
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
+  authOpen: false,
+  authMode: "signin",
+  openAuth: (mode = "signin") => set({ authOpen: true, authMode: mode }),
+  closeAuth: () => set({ authOpen: false }),
 
   player: {
     open: false,
@@ -59,10 +60,7 @@ export const useAppStore = create<AppState>((set) => ({
     type: "live",
     streamId: "",
   },
-  openPlayer: (p) =>
-    set({
-      player: { ...p, open: true },
-    }),
+  openPlayer: (p) => set({ player: { ...p, open: true } }),
   closePlayer: () =>
     set((state) => ({ player: { ...state.player, open: false } })),
 
@@ -70,7 +68,4 @@ export const useAppStore = create<AppState>((set) => ({
   openSeriesDetail: (s) => set({ seriesDetail: { ...s, open: true } }),
   closeSeriesDetail: () =>
     set((state) => ({ seriesDetail: { ...state.seriesDetail, open: false } })),
-
-  refreshKey: 0,
-  bumpRefresh: () => set((s) => ({ refreshKey: s.refreshKey + 1 })),
 }));

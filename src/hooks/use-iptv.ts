@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import type { StreamType } from "@/lib/types";
 
 export interface FavoriteItem {
@@ -71,9 +72,11 @@ export function useActivePlaylist() {
 
 export function useFavorites() {
   const qc = useQueryClient();
+  const { status } = useSession();
   const query = useQuery<FavoriteItem[]>({
     queryKey: ["favorites"],
     queryFn: () => api<FavoriteItem[]>("/api/favorites"),
+    enabled: status === "authenticated",
   });
 
   const isFavorite = (streamId: string, type: StreamType) =>
@@ -122,9 +125,11 @@ export function useFavorites() {
 
 export function useHistory() {
   const qc = useQueryClient();
+  const { status } = useSession();
   const query = useQuery<HistoryItem[]>({
     queryKey: ["history"],
     queryFn: () => api<HistoryItem[]>("/api/history"),
+    enabled: status === "authenticated",
   });
 
   const upsert = useMutation({

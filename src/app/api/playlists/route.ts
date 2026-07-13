@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { authenticateXtream, ensureDefaultPlaylist } from "@/lib/xtream";
+import { requireAdmin, getCurrentUser } from "@/lib/session";
+import { ensureDefaultPlaylist } from "@/lib/xtream";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/playlists  -> { playlists, active }
+// GET /api/playlists  -> { playlists, active }  (admin sees full; others get none)
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") {
+    return NextResponse.json({ playlists: [], active: null });
+  }
   await ensureDefaultPlaylist();
   const playlists = await db.playlist.findMany({
     orderBy: { createdAt: "asc" },
@@ -16,6 +21,11 @@ export async function GET() {
 
 // POST /api/playlists  -> create { name, dns, username, password, setActive? }
 export async function POST(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const body = await req.json().catch(() => ({}));
   const { name, dns, username, password, setActive } = body as {
     name?: string;
@@ -51,6 +61,11 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/playlists  -> set active { id }
 export async function PATCH(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const body = await req.json().catch(() => ({}));
   const { id } = body as { id?: string };
   if (!id) {
@@ -66,13 +81,17 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE /api/playlists?id=...
 export async function DELETE(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
   await db.playlist.delete({ where: { id } });
-  // re-activate the first remaining if needed
   const remaining = await db.playlist.findFirst({ orderBy: { createdAt: "asc" } });
   if (remaining && !remaining.active) {
     await db.playlist.update({

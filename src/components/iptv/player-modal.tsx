@@ -55,15 +55,27 @@ export function PlayerModal() {
     const video = videoRef.current;
     if (!video) return;
 
+    // Live streams are served as HLS (m3u8) through the proxy; movies/series
+    // are direct files (mp4). The proxied URL no longer contains ".m3u8", so
+    // we detect HLS by stream type or the URL shape.
     const isHls =
+      player.type === "live" ||
       player.streamUrl.includes(".m3u8") ||
-      player.streamUrl.includes("m3u8");
+      player.streamUrl.includes("m3u8") ||
+      player.streamUrl.includes("type=live");
 
     const startPlayback = () => {
       setLoading(false);
-      video.play().catch(() => {
-        /* autoplay may be blocked; user can press play */
-      });
+      // Try autoplay with sound; if blocked by the browser policy, fall back
+      // to muted autoplay so the stream starts immediately.
+      video
+        .play()
+        .catch(() => {
+          video.muted = true;
+          video.play().catch(() => {
+            /* user must press play manually */
+          });
+        });
     };
 
     if (isHls) {

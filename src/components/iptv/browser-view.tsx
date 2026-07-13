@@ -51,13 +51,16 @@ export function BrowserView({ type }: BrowserViewProps) {
   const { data: categories, isLoading: catsLoading } = useQuery<Category[]>({
     queryKey: ["categories", catAction],
     queryFn: () => api<Category[]>(`/api/xtream?action=${catAction}`),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
   });
 
   const { data: rawStreams, isLoading: streamsLoading, error } = useQuery({
     queryKey: ["streams", action],
     queryFn: () => api<unknown[]>(`/api/xtream?action=${action}`),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: 2000,
   });
 
   const items: MediaItem[] = useMemo(() => {

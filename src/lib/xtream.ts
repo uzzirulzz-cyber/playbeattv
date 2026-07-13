@@ -171,8 +171,16 @@ async function fetchXtream<T>(
   }
   const url = `${base}/player_api.php?${params.toString()}`;
 
+  // In-memory cache for large list endpoints (vod_streams, live_streams, series).
+  // These can take 7-10s to fetch and rarely change, so we cache for 10 minutes.
+  const cacheKey = url;
+  const cached = xtreamCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data as T;
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
     const res = await fetch(url, {
@@ -190,15 +198,29 @@ async function fetchXtream<T>(
 
     const text = await res.text();
     if (!text) return [] as unknown as T;
+    let parsed: T;
     try {
-      return JSON.parse(text) as T;
+      parsed = JSON.parse(text) as T;
     } catch {
       throw new Error("Xtream API returned invalid JSON");
     }
+
+    // Cache list responses (arrays) for 10 minutes to avoid slow refetches.
+    if (Array.isArray(parsed)) {
+      xtreamCache.set(cacheKey, {
+        data: parsed,
+        expires: Date.now() + 10 * 60 * 1000,
+      });
+    }
+
+    return parsed;
   } finally {
     clearTimeout(timeout);
   }
 }
+
+// Simple in-memory cache for Xtream API responses.
+const xtreamCache = new Map<string, { data: unknown; expires: number }>();
 
 export async function authenticateXtream(
   dns: string,

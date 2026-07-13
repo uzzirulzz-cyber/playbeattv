@@ -10,6 +10,17 @@ export async function getActivePlaylist() {
         where: { id: playlist.id },
         data: { active: true },
       });
+    } else {
+      // Auto-seed the default playlist if the database is empty.
+      playlist = await db.playlist.create({
+        data: {
+          name: "PlayBeat Backend",
+          dns: "http://njqqh.mor-esp.cc",
+          username: "FHHNUEH",
+          password: "2HSJRV6",
+          active: true,
+        },
+      });
     }
   }
   return playlist;

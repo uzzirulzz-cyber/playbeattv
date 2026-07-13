@@ -14,6 +14,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getRegionList, DEFAULT_REGION } from "@/lib/plans";
+import {
   Mail,
   Lock,
   User,
@@ -40,6 +48,7 @@ export function AuthDialog() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [region, setRegion] = useState(DEFAULT_REGION);
   const [showPass, setShowPass] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -64,7 +73,7 @@ export function AuthDialog() {
       if (activeMode === "signup") {
         await api("/api/auth/register", {
           method: "POST",
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, region }),
         });
       }
       const res = await signIn("credentials", {
@@ -233,6 +242,27 @@ export function AuthDialog() {
                 </button>
               </div>
             </div>
+
+            {isSignup ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-region">Region</Label>
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger id="auth-region">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getRegionList().map((r) => (
+                      <SelectItem key={r.code} value={r.code}>
+                        {r.name} ({r.currency} {r.symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Prices are shown in your local currency.
+                </p>
+              </div>
+            ) : null}
 
             <Button
               type="submit"

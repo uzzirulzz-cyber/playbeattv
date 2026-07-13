@@ -13,6 +13,7 @@ import {
   X,
   ShieldCheck,
   LogOut,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
@@ -32,6 +33,7 @@ const NAV: NavItem[] = [
   { id: "live", label: "Live TV", icon: Tv },
   { id: "movies", label: "Movies", icon: Film },
   { id: "series", label: "Series", icon: Clapperboard },
+  { id: "categories", label: "Categories", icon: LayoutGrid },
   { id: "favorites", label: "Favorites", icon: Heart },
   { id: "history", label: "History", icon: History },
   { id: "storefront", label: "Subscribe", icon: Store },

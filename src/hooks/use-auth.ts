@@ -14,6 +14,7 @@ export function useAuth() {
     role: user?.role,
     plan: user?.plan,
     planExpires: user?.planExpires,
+    region: user?.region,
     isAdmin: user?.role === "admin",
     userId: user?.id,
     update,

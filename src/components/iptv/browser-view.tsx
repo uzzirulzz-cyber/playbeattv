@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Search, ChevronDown } from "lucide-react";
+import { AlertCircle, Search, ChevronDown, Lock, Crown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/hooks/use-iptv";
 import {
   liveToMedia,
@@ -29,6 +30,10 @@ const PAGE_SIZE = 48;
 export function BrowserView({ type }: BrowserViewProps) {
   const selectedCategoryId = useAppStore((s) => s.selectedCategoryId);
   const search = useAppStore((s) => s.search);
+  const setView = useAppStore((s) => s.setView);
+  const { plan, planExpires } = useAuth();
+  const isMember =
+    plan && plan !== "free" && (!planExpires || new Date(planExpires).getTime() > Date.now());
 
   const action =
     type === "live"
@@ -113,6 +118,25 @@ export function BrowserView({ type }: BrowserViewProps) {
         loading={catsLoading}
         counts={counts}
       />
+
+      {!isMember && items.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Lock className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">
+              You&apos;re seeing <strong className="text-foreground">10% free preview</strong> of this content.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            className="gap-1.5 brand-gradient text-white"
+            onClick={() => setView("storefront")}
+          >
+            <Crown className="h-4 w-4" />
+            Unlock All
+          </Button>
+        </div>
+      ) : null}
 
       <AdBanner />
 

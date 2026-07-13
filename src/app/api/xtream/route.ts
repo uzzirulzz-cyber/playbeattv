@@ -12,13 +12,38 @@ import {
   getSeriesInfo,
   getVodInfo,
 } from "@/lib/xtream";
+import { FREE_CONTENT_FRACTION } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
+function hasActivePlan(
+  plan: string | undefined,
+  planExpires: string | null | undefined
+): boolean {
+  if (!plan || plan === "free") return false;
+  if (!planExpires) return false;
+  return new Date(planExpires).getTime() > Date.now();
+}
+
+/** Truncate an array to a fraction of its length (deterministic, every Nth item). */
+function gateContent<T>(items: T[], fraction: number): T[] {
+  if (fraction >= 1) return items;
+  const keepCount = Math.max(1, Math.ceil(items.length * fraction));
+  // Keep evenly distributed items so the preview looks representative.
+  if (items.length <= keepCount) return items;
+  const step = items.length / keepCount;
+  const result: T[] = [];
+  for (let i = 0; i < keepCount; i++) {
+    result.push(items[Math.floor(i * step)]);
+  }
+  return result;
+}
+
 export async function GET(req: NextRequest) {
   // Auth gate — only signed-in users can browse content.
+  let user;
   try {
-    await requireUser();
+    user = await requireUser();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,6 +63,7 @@ export async function GET(req: NextRequest) {
   const vodId = searchParams.get("vod_id");
 
   const { dns, username, password } = playlist;
+  const isMember = hasActivePlan(user.plan, user.planExpires);
 
   try {
     switch (action) {
@@ -49,18 +75,22 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(
           await getLiveCategories(dns, username, password)
         );
-      case "live_streams":
+      case "live_streams": {
+        const streams = await getLiveStreams(dns, username, password, categoryId);
         return NextResponse.json(
-          await getLiveStreams(dns, username, password, categoryId)
+          isMember ? streams : gateContent(streams, FREE_CONTENT_FRACTION)
         );
+      }
       case "vod_categories":
         return NextResponse.json(
           await getVodCategories(dns, username, password)
         );
-      case "vod_streams":
+      case "vod_streams": {
+        const streams = await getVodStreams(dns, username, password, categoryId);
         return NextResponse.json(
-          await getVodStreams(dns, username, password, categoryId)
+          isMember ? streams : gateContent(streams, FREE_CONTENT_FRACTION)
         );
+      }
       case "vod_info":
         if (!vodId)
           return NextResponse.json(
@@ -74,10 +104,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(
           await getSeriesCategories(dns, username, password)
         );
-      case "series":
+      case "series": {
+        const series = await getSeries(dns, username, password, categoryId);
         return NextResponse.json(
-          await getSeries(dns, username, password, categoryId)
+          isMember ? series : gateContent(series, FREE_CONTENT_FRACTION)
         );
+      }
       case "series_info":
         if (!seriesId)
           return NextResponse.json(

@@ -1,16 +1,18 @@
-// Prisma schema for PLAYBEAT TV
+// Prisma schema for PLAYBEAT TV — MongoDB Atlas
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
+  // To switch to MongoDB Atlas: change provider to "mongodb" and url to
+  // env("MONGODB_URI"). The schema is already MongoDB-compatible (@map("_id")).
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(cuid()) @map("_id")
   email         String    @unique
   name          String?
   password      String? // hashed (credentials provider)
@@ -18,6 +20,7 @@ model User {
   role          String    @default("user") // "user" | "admin"
   plan          String    @default("free") // "free" | "monthly" | "quarterly" | "yearly"
   planExpires   DateTime?
+  region        String    @default("PK") // ISO country code for region-wise pricing
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -26,10 +29,11 @@ model User {
   favorites     Favorite[]
   history       History[]
   subscriptions Subscription[]
+  payments      Payment[]
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(cuid()) @map("_id")
   userId            String
   type              String
   provider          String
@@ -48,7 +52,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @map("_id")
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -57,6 +61,7 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(cuid()) @map("_id")
   identifier String
   token      String   @unique
   expires    DateTime
@@ -66,7 +71,7 @@ model VerificationToken {
 
 /// Shared IPTV backend config (admin-managed). Only one active row.
 model Playlist {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @map("_id")
   name       String
   dns        String
   username   String
@@ -80,8 +85,21 @@ model Playlist {
   updatedAt  DateTime @updatedAt
 }
 
+/// Custom meta-categories that map to Xtream backend categories.
+model CustomCategory {
+  id          String   @id @default(cuid()) @map("_id")
+  slug        String   @unique // "news" | "sports" | "movies" ...
+  name        String
+  icon        String?  // lucide icon name
+  color       String?  // tailwind gradient
+  sort        Int      @default(0)
+  // JSON array of patterns matched against Xtream category names (case-insensitive)
+  patterns    String   @default("[]")
+  createdAt   DateTime @default(now())
+}
+
 model Favorite {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @map("_id")
   streamId   String
   name       String
   type       String // "live" | "movie" | "series"
@@ -97,7 +115,7 @@ model Favorite {
 }
 
 model History {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @map("_id")
   streamId   String
   name       String
   type       String
@@ -114,15 +132,33 @@ model History {
 }
 
 model Subscription {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   userId    String
   plan      String // "monthly" | "quarterly" | "yearly"
   amount    Float
   currency  String   @default("USD")
-  status    String   @default("active") // "active" | "cancelled" | "expired"
+  region    String   @default("PK")
+  status    String   @default("active") // "active" | "cancelled" | "expired" | "pending"
   startAt   DateTime @default(now())
   endAt     DateTime
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Payment records for JazzCash / Stripe / PayPal / EasyPaisa
+model Payment {
+  id           String   @id @default(cuid()) @map("_id")
+  userId       String
+  gateway      String   // "jazzcash" | "easypaisa" | "stripe" | "paypal" | "manual"
+  amount       Float
+  currency     String   @default("PKR")
+  plan         String
+  txnRef       String?  // JazzCash pp_TxnRefNo / Stripe session / PayPal order
+  status       String   @default("pending") // "pending" | "paid" | "failed" | "refunded"
+  gatewayData  String?  // JSON blob of gateway response
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

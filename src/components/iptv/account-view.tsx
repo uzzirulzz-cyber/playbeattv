@@ -17,7 +17,7 @@ import {
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAppStore } from "@/lib/store";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS, getRegion, type PlanId } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -124,6 +124,12 @@ export function AccountView() {
             <span className="text-sm text-muted-foreground">Account type</span>
             <Badge variant="secondary">
               {user?.role === "admin" ? "Administrator" : "Member"}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Region</span>
+            <Badge variant="secondary">
+              {getRegion(user?.region).name} ({getRegion(user?.region).currency})
             </Badge>
           </div>
         </CardContent>

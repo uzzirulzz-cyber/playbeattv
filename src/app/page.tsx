@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Loader2, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { HomeView } from "@/components/iptv/home-view";
 import { BrowserView } from "@/components/iptv/browser-view";
 import { FavoritesView } from "@/components/iptv/favorites-view";
 import { HistoryView } from "@/components/iptv/history-view";
+import { CategoriesView } from "@/components/iptv/categories-view";
 import { StorefrontView } from "@/components/iptv/storefront-view";
 import { AccountView } from "@/components/iptv/account-view";
 import { AdminView } from "@/components/iptv/admin-view";
@@ -16,14 +18,53 @@ import { LandingView } from "@/components/iptv/landing-view";
 import { PlayerModal } from "@/components/iptv/player-modal";
 import { SeriesDetailDialog } from "@/components/iptv/series-detail";
 import { AuthDialog } from "@/components/iptv/auth-dialog";
+import { BotHeartbeat } from "@/components/iptv/bot-heartbeat";
 import { useAppStore } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import type { ViewId } from "@/lib/types";
+
+const VALID_VIEWS: ViewId[] = [
+  "home", "live", "movies", "series", "categories",
+  "favorites", "history", "storefront", "account", "admin",
+];
 
 export default function Home() {
   const view = useAppStore((s) => s.view);
+  const setView = useAppStore((s) => s.setView);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Handle payment redirect URLs: ?view=X&payment=Y
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view") as ViewId | null;
+    const paymentParam = params.get("payment");
+
+    if (viewParam && VALID_VIEWS.includes(viewParam)) {
+      setView(viewParam);
+    }
+
+    if (paymentParam) {
+      const messages: Record<string, { title: string; variant: "success" | "error" | "info" }> = {
+        success: { title: "Payment successful! Your subscription is now active. 🎉", variant: "success" },
+        failed: { title: "Payment failed. Please try again.", variant: "error" },
+        cancelled: { title: "Payment cancelled.", variant: "info" },
+        error: { title: "Payment verification error. Contact support.", variant: "error" },
+        notfound: { title: "Payment record not found.", variant: "error" },
+      };
+      const msg = messages[paymentParam];
+      if (msg) {
+        if (msg.variant === "success") toast.success(msg.title);
+        else if (msg.variant === "error") toast.error(msg.title);
+        else toast.info(msg.title);
+      }
+      // Clean the URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [setView]);
 
   // Loading splash while the session resolves.
   if (isLoading) {
@@ -86,6 +127,7 @@ export default function Home() {
               {view === "series" ? <BrowserView type="series" /> : null}
               {view === "favorites" ? <FavoritesView /> : null}
               {view === "history" ? <HistoryView /> : null}
+              {view === "categories" ? <CategoriesView /> : null}
               {view === "storefront" ? <StorefrontView /> : null}
               {view === "account" ? <AccountView /> : null}
               {view === "admin" ? <AdminView /> : null}
@@ -116,6 +158,7 @@ export default function Home() {
       <PlayerModal />
       <SeriesDetailDialog />
       <AuthDialog />
+      <BotHeartbeat />
     </div>
   );
 }

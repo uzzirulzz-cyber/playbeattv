@@ -60,6 +60,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image ?? undefined,
           role: user.role,
           plan: user.plan,
+          region: user.region,
         } as {
           id: string;
           email: string;
@@ -67,6 +68,7 @@ export const authOptions: NextAuthOptions = {
           image?: string | null;
           role: string;
           plan: string;
+          region: string;
         };
       },
     }),
@@ -82,10 +84,12 @@ export const authOptions: NextAuthOptions = {
           image?: string | null;
           role?: string;
           plan?: string;
+          region?: string;
         };
         token.id = u.id;
         token.role = u.role ?? "user";
         token.plan = u.plan ?? "free";
+        token.region = u.region ?? "PK";
         if (u.image) token.picture = u.image;
       }
 
@@ -94,15 +98,16 @@ export const authOptions: NextAuthOptions = {
         token.plan = session.plan as string;
       }
 
-      // Always re-sync role/plan from DB if we have a user id (cheap, keeps admin changes live)
+      // Always re-sync role/plan/region from DB if we have a user id (cheap, keeps admin changes live)
       if (token.id) {
         const fresh = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, plan: true, name: true, image: true, planExpires: true },
+          select: { role: true, plan: true, name: true, image: true, planExpires: true, region: true },
         });
         if (fresh) {
           token.role = fresh.role;
           token.plan = fresh.plan;
+          token.region = fresh.region;
           token.name = fresh.name ?? token.name;
           if (fresh.image) token.picture = fresh.image;
           token.planExpires = fresh.planExpires?.toISOString() ?? null;
@@ -116,6 +121,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id?: string }).id = token.id as string;
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { plan?: string }).plan = token.plan as string;
+        (session.user as { region?: string }).region = token.region as string;
         (session.user as { planExpires?: string | null }).planExpires =
           (token.planExpires as string | null) ?? null;
         if (token.picture) session.user.image = token.picture as string;
@@ -147,6 +153,7 @@ declare module "next-auth" {
       image?: string | null;
       role?: string;
       plan?: string;
+      region?: string;
       planExpires?: string | null;
     };
   }
@@ -157,6 +164,7 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: string;
     plan?: string;
+    region?: string;
     planExpires?: string | null;
   }
 }

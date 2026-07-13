@@ -72,3 +72,33 @@ Stage Summary (Agent Browser verified):
 - Sign out returns to landing (auth gate confirmed).
 - Mobile responsive; sticky footer at document bottom. No console/page errors (only expected autoplay-policy notice, handled by muted fallback).
 - NOTE: backend playlist has max_connections=1 (only 1 concurrent stream). Google/Facebook OAuth need GOOGLE_CLIENT_ID/SECRET + FACEBOOK_CLIENT_ID/SECRET in .env to enable (buttons show "coming soon" until then).
+
+---
+Task ID: 17-26
+Agent: main (Z.ai Code)
+Task: Security firewall, MongoDB migration, custom categories, region-wise pricing (PKR), JazzCash/EasyPaisa/Stripe/PayPal payments, 10% free content gating, 30s bot handler, membership signup end-to-end.
+
+Work Log:
+- MongoDB: Updated Prisma schema to MongoDB-compatible (provider switchable, @map("_id"), patterns as JSON string). Tested Atlas connection — SCRAM auth failed (credentials not set up in Atlas dashboard). Fell back to SQLite with schema ready for 1-line MongoDB switch. MONGODB_URI stored in .env.
+- Security firewall (src/proxy.ts — Next.js 16 proxy convention): rate limiting (10 auth attempts/min, 120 stream req/min), blocked scanner user-agents (sqlmap/nikto/nmap/etc.), path-traversal blocking, full security headers (CSP, X-Frame-Options DENY, X-Content-Type nosniff, Referrer-Policy, Permissions-Policy). Verified: 11th auth attempt returns 429.
+- Custom categories: 15 meta-categories (News, Sports, Movies, Entertainment, Music, Kids, Regional, Hindi, Pakistan, India, Bangladesh, Informative, Traditional, Science, Education) with pattern-matching against Xtream backend category names. New CategoriesView with icon tiles + filtered channel grids.
+- Region-wise pricing: 10 regions (PK default, US, GB, EU, IN, BD, AE, SA, CA, AU). PKR fixed prices (₨420/₨1,050/₨3,360), USD ($1.50/$3.99/$13.99), etc. Region selector in signup + storefront. Subscription starts at $1.5/month.
+- Payments: JazzCash (server-side HMAC-SHA256 secure hash, sandbox creds MC828933/t3zz48w4aa/tdw4713y34, form redirect flow — verified: returns signed form with correct hash, merchant ID, amount in paisa). EasyPaisa (manual: 03390005715, TID submission flow — verified). Stripe (checkout sessions — needs STRIPE_SECRET_KEY). PayPal (REST API create-order + capture — needs PAYPAL_CLIENT_ID/SECRET). Payment model records all transactions. Checkout dialog with 4 gateway options.
+- 10% free content gating: API returns 10% of streams to free users (deterministic even sampling). Free user sees 2,856 / 28,552 total live streams. Member (admin/yearly) sees all 28,552. "10% free preview" banner with Unlock CTA.
+- Bot handler (/api/bot): runs every 30s via BotHeartbeat client component. Checks backend health, expires subscriptions past end date, downgrades expired users, prunes stale payments (>24h pending), gathers stats. Verified: returns JSON with backend=online, users, activeSubs.
+- Membership signup: region selection at signup, plan selection in storefront, payment method selection in checkout dialog, automatic subscription activation on successful payment (JazzCash return / Stripe webhook / PayPal capture). Payment redirect URLs handled with toast notifications.
+- Renamed middleware.ts → proxy.ts (Next.js 16 convention).
+
+Stage Summary (Agent Browser verified):
+- Security headers: CSP, X-Frame-Options, X-Content-Type, Referrer-Policy, Permissions-Policy all present. Rate limiting: 429 after 10 auth attempts.
+- MongoDB: schema ready, Atlas creds need fixing (SCRAM auth failed). SQLite fallback works.
+- Custom categories: 15 categories render with channel counts. Sports → 551 channels.
+- Region pricing: PK ₨420/₨1,050/₨3,360; US $1.50/$3.99/$13.99. Region selector works.
+- JazzCash: API returns signed form (pp_SecureHash, MC828933, 42000 paisa=₨420, sandbox URL). ✅
+- EasyPaisa: Returns 03390005715 + ₨420 + 4 instructions. TID submission flow works. ✅
+- Stripe/PayPal: Code complete, needs API keys to enable. Graceful "not configured" messages.
+- Content gating: Free=2,856 streams (10%), Member=28,552 (100%). "10% free preview" banner. ✅
+- Bot handler: Returns ok=true, backend=online, stats. 30s heartbeat via BotHeartbeat. ✅
+- Admin panel: 2 users, 1 admin, backend Online. ✅
+- No console/page errors. Lint clean.
+- Credentials still hidden: FHHNUEH, 2HSJRV6, njqqh.mor-esp.cc all absent from page text.

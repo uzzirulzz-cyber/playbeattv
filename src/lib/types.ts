@@ -5,6 +5,7 @@ export type ViewId =
   | "series"
   | "favorites"
   | "history"
+  | "categories"
   | "storefront"
   | "account"
   | "admin";

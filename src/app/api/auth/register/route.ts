@@ -9,10 +9,11 @@ const ADMIN_BOOTSTRAP_EMAIL =
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { name, email, password } = body as {
+  const { name, email, password, region } = body as {
     name?: string;
     email?: string;
     password?: string;
+    region?: string;
   };
 
   if (!email || !password) {
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
 
   const hashed = await hashPassword(password);
   const isAdmin = normalizedEmail === ADMIN_BOOTSTRAP_EMAIL.toLowerCase();
+  const userRegion = region?.toUpperCase() || "PK";
 
   const user = await db.user.create({
     data: {
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
       planExpires: isAdmin
         ? new Date(Date.now() + 365 * 24 * 3600 * 1000)
         : null,
+      region: userRegion,
     },
   });
 

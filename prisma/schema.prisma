@@ -5,8 +5,6 @@ generator client {
 }
 
 datasource db {
-  // ⚠️ MongoDB auth failing — see instructions below.
-  // Once you fix the Atlas credentials, change provider to "mongodb".
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }

@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  // To switch to MongoDB Atlas: change provider to "mongodb" and url to
-  // env("MONGODB_URI"). The schema is already MongoDB-compatible (@map("_id")).
+  // ⚠️ MongoDB auth failing — see instructions below.
+  // Once you fix the Atlas credentials, change provider to "mongodb".
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }

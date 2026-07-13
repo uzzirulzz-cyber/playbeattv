@@ -18,6 +18,8 @@ import {
   Wifi,
   WifiOff,
   Tv,
+  Check,
+  X,
 } from "lucide-react";
 import { api, type PlaylistRecord } from "@/hooks/use-iptv";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +36,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PLANS, type PlanId } from "@/lib/plans";
 import { toast } from "sonner";
 
 interface Stats {
@@ -61,6 +78,9 @@ interface AdminUser {
 export function AdminView() {
   const { isAdmin, isLoading } = useAuth();
   const qc = useQueryClient();
+  const [activateUser, setActivateUser] = useState<AdminUser | null>(null);
+  const [activatePlan, setActivatePlan] = useState<PlanId>("monthly");
+  const [activateDays, setActivateDays] = useState<string>("");
 
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
     queryKey: ["admin-stats"],
@@ -73,6 +93,45 @@ export function AdminView() {
     queryKey: ["admin-users"],
     queryFn: () => api<{ users: AdminUser[] }>("/api/admin/users"),
     enabled: isAdmin,
+  });
+
+  // Activate/extend subscription for a user
+  const activateSub = useMutation({
+    mutationFn: () => {
+      if (!activateUser) throw new Error("No user selected");
+      return api("/api/admin/subscriptions", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: activateUser.id,
+          plan: activatePlan,
+          durationDays: activateDays ? parseInt(activateDays) : undefined,
+        }),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Subscription activated successfully!");
+      setActivateUser(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Cancel a user's subscription
+  const cancelSub = useMutation({
+    mutationFn: (userId: string) => {
+      // Find the user's active subscription ID from the users data
+      const user = usersData?.users?.find((u) => u.id === userId);
+      if (!user) throw new Error("User not found");
+      // We pass the userId as a query param — the API finds and cancels
+      return api(`/api/admin/subscriptions?userId=${userId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      toast.success("Subscription cancelled.");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
   const { data: playlistData } = useQuery<{
     playlists: PlaylistRecord[];
@@ -229,6 +288,7 @@ export function AdminView() {
                     <TableHead className="text-right">Favs</TableHead>
                     <TableHead className="text-right">History</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -275,6 +335,35 @@ export function AdminView() {
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {u.plan !== "free" && u.planExpires && new Date(u.planExpires) > new Date() ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => cancelSub.mutate(u.id)}
+                              disabled={cancelSub.isPending}
+                            >
+                              <X className="h-3 w-3" />
+                              Cancel
+                            </Button>
+                          ) : null}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => {
+                              setActivateUser(u);
+                              setActivatePlan("monthly");
+                              setActivateDays("");
+                            }}
+                          >
+                            <Crown className="h-3 w-3" />
+                            {u.plan !== "free" ? "Extend" : "Activate"}
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -283,6 +372,67 @@ export function AdminView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Subscription activation dialog */}
+      <Dialog open={!!activateUser} onOpenChange={(o) => !o && setActivateUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-400" />
+              Activate Subscription
+            </DialogTitle>
+            <DialogDescription>
+              {activateUser ? `${activateUser.name || activateUser.email}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Select Plan</Label>
+              <Select value={activatePlan} onValueChange={(v) => setActivatePlan(v as PlanId)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(PLANS).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.durationDays} days)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Custom Duration (days) — optional</Label>
+              <Input
+                type="number"
+                value={activateDays}
+                onChange={(e) => setActivateDays(e.target.value)}
+                placeholder={`Default: ${PLANS[activatePlan]?.durationDays} days`}
+              />
+              <p className="text-xs text-muted-foreground">
+                Override the plan duration. Leave empty to use the plan default.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" onClick={() => setActivateUser(null)}>
+                Cancel
+              </Button>
+              <Button
+                className="gap-1.5 brand-gradient text-white"
+                disabled={activateSub.isPending}
+                onClick={() => activateSub.mutate()}
+              >
+                {activateSub.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                Activate Subscription
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

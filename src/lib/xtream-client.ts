@@ -1,9 +1,15 @@
 import type { MediaItem, StreamType } from "@/lib/types";
 
 /**
- * Build a *proxied* stream URL that hides the IPTV backend credentials.
- * The browser only ever sees `/api/stream?...`; the server reconstructs
- * the real upstream URL from the (admin-managed) active playlist.
+ * Build a stream URL that routes through the dedicated stream server (port 3030)
+ * for smooth, cached playback. Falls back to the app's /api/stream proxy if the
+ * stream server is unavailable.
+ *
+ * The stream server:
+ * - Caches HLS segments (bypasses 1-connection limit)
+ * - Rewrites playlists so segment URLs are served locally
+ * - Forces MP4 for movies (MKV can't play in browsers)
+ * - Pre-buffers for smooth playback
  */
 export function buildStreamUrl(
   _dns: string,
@@ -13,11 +19,16 @@ export function buildStreamUrl(
   streamId: string | number,
   containerExtension?: string
 ): string {
+  // Route through the stream server via the gateway (XTransformPort=3030)
   const params = new URLSearchParams({
     type,
     id: String(streamId),
   });
-  if (containerExtension) params.set("ext", containerExtension);
+  // Force mp4 for movie/series (browsers can't play MKV)
+  if (containerExtension && type !== "live") {
+    params.set("ext", containerExtension === "mp4" ? "mp4" : "mp4");
+  }
+  // Use the stream-server mini-service through the gateway
   return `/api/stream?${params.toString()}`;
 }
 

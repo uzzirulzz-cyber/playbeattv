@@ -97,7 +97,6 @@ async function pipeResponse(
 
 export async function GET(req: NextRequest) {
   // Allow guests (non-signed-in) to stream the free preview content.
-  // getCurrentUser returns null for guests — no auth gate here.
   await getCurrentUser();
 
   const playlist = await getActivePlaylist();
@@ -107,26 +106,68 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const u = searchParams.get("u");
-  const s = searchParams.get("s"); // session token (cookie reference)
+  const s = searchParams.get("s");
   const type = searchParams.get("type") as StreamType | null;
   const id = searchParams.get("id");
   const ext = searchParams.get("ext") || undefined;
 
+  // Try the dedicated stream server first (for cached, smooth playback).
+  // The stream server runs on port 3030 and caches segments.
+  if (!u && type && id) {
+    // Force mp4 for movies (MKV can't play in browsers)
+    const actualExt = type !== "live" && (ext === "mkv" || ext === "avi" || ext === "flv") ? "mp4" : ext;
+    const streamServerUrl = `http://localhost:3030/stream?type=${type}&id=${id}${actualExt ? `&ext=${actualExt}` : ""}`;
+    try {
+      const range = req.headers.get("range");
+      const streamServerHeaders: Record<string, string> = {};
+      if (range) streamServerHeaders["range"] = range;
+
+      const streamRes = await fetch(streamServerUrl, {
+        headers: streamServerHeaders,
+        cache: "no-store",
+      });
+
+      if (streamRes.ok) {
+        const contentType = streamRes.headers.get("content-type") || "";
+        // If it's an M3U8, pass it through (already rewritten by stream server)
+        if (contentType.includes("mpegurl") || type === "live") {
+          const text = await streamRes.text();
+          return new Response(text, {
+            status: 200,
+            headers: {
+              "content-type": "application/vnd.apple.mpegurl",
+              "cache-control": "no-store",
+            },
+          });
+        }
+        // Pass through the response with Range support
+        const headers = new Headers();
+        for (const h of ["content-type", "content-length", "content-range", "accept-ranges"]) {
+          const v = streamRes.headers.get(h);
+          if (v) headers.set(h, v);
+        }
+        return new Response(streamRes.body, { status: streamRes.status, headers });
+      }
+    } catch {
+      // Stream server unavailable — fall through to direct proxy
+    }
+  }
+
+  // Fallback: direct proxy through the app (original logic)
   let upstreamUrl: string;
-  let isMaster = false; // true when this is an m3u8 we should rewrite
+  let isMaster = false;
 
   if (u) {
-    // Segment/variant request — `u` is the full absolute upstream URL
-    // (resolved against the m3u8's final origin when rewritten).
     upstreamUrl = unb64url(u);
   } else if (type && id) {
+    const actualExt = type !== "live" && (ext === "mkv" || ext === "avi" || ext === "flv") ? "mp4" : ext;
     upstreamUrl = buildStreamUrl(
       playlist.dns,
       playlist.username,
       playlist.password,
       type,
       id,
-      ext
+      actualExt
     );
     isMaster = true;
   } else {

@@ -52,8 +52,8 @@ export function AdminLogin() {
       // Wait for the session to be established before navigating.
       setTimeout(() => {
         setView("admin");
-        // Navigate to home with admin view set — the store will render AdminView.
-        window.location.href = "/?view=admin";
+        // Navigate to /admin — the rewrite serves the app and the store shows AdminView.
+        window.location.href = "/admin";
       }, 800);
     } catch {
       toast.error("Something went wrong.");

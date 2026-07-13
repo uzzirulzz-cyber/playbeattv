@@ -38,10 +38,10 @@ export default function Home() {
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Handle URL routing: ?view=X, #/view=X, or #view — plus payment redirects.
+  // Handle URL routing: ?view=X, #/view, or path /admin /storefront — plus payment redirects.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const { hash, search } = window.location;
+    const { hash, search, pathname } = window.location;
 
     // Parse view from query string (?view=X) or hash (#/storefront or #storefront)
     let viewParam: ViewId | null = null;
@@ -54,6 +54,14 @@ export default function Home() {
       const hashView = clean.split(/[?&]/)[0] as ViewId;
       if (VALID_VIEWS.includes(hashView)) {
         viewParam = hashView;
+      }
+    }
+
+    if (!viewParam) {
+      // Path-based routing: /admin, /storefront, etc.
+      const pathView = pathname.replace(/^\//, "") as ViewId;
+      if (VALID_VIEWS.includes(pathView)) {
+        viewParam = pathView;
       }
     }
 

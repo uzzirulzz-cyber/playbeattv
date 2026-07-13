@@ -80,7 +80,7 @@ export function StorefrontView() {
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
             Unlock 10,000+ live channels, thousands of movies & series. Starting
-            at just {formatPrice(1.5, "USD", "$")}/month. Cancel anytime.
+            at just {formatPrice(1.4, "USD", "$")}/month. Cancel anytime.
           </p>
           {activePlan && !expired ? (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-400">

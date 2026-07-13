@@ -23,12 +23,12 @@ export const REGIONS: Record<string, RegionConfig> = {
     currency: "PKR",
     symbol: "₨",
     rateFromUSD: 280,
-    // Subscription starts at $1.5 — in PKR that's ~420 (using 280/dollar).
+    // Subscription starts at $1.4 — in PKR that's ~392 (using 280/dollar).
     // Fixed local pricing for Pakistan (affordable tiers).
     fixedPrices: {
-      monthly: 420,
-      quarterly: 1050,
-      yearly: 3360,
+      monthly: 392,
+      quarterly: 980,
+      yearly: 3486,
     },
   },
   US: { code: "US", name: "United States", currency: "USD", symbol: "$", rateFromUSD: 1 },
@@ -53,12 +53,12 @@ export function getRegionList(): RegionConfig[] {
   return Object.values(REGIONS).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Base USD plan prices — subscription starts at $1.5/month
+// Base USD plan prices — subscription starts at $1.4/month
 export const PLANS = {
   monthly: {
     id: "monthly",
     name: "Monthly",
-    priceUSD: 1.5,
+    priceUSD: 1.4,
     durationDays: 30,
     features: [
       "Full 10,000+ Live TV channels",
@@ -71,11 +71,11 @@ export const PLANS = {
   quarterly: {
     id: "quarterly",
     name: "Quarterly",
-    priceUSD: 3.99,
+    priceUSD: 3.79,
     durationDays: 90,
     features: [
       "Everything in Monthly",
-      "Save 11% vs monthly",
+      "Save 10% vs monthly",
       "2 simultaneous connections",
       "Priority support",
     ],
@@ -83,11 +83,11 @@ export const PLANS = {
   yearly: {
     id: "yearly",
     name: "Annual",
-    priceUSD: 13.99,
+    priceUSD: 13.49,
     durationDays: 365,
     features: [
       "Everything in Quarterly",
-      "Save 22% vs monthly",
+      "Save 20% vs monthly",
       "3 simultaneous connections",
       "Early access to new content",
       "Premium support",

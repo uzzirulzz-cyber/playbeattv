@@ -172,7 +172,7 @@ async function fetchXtream<T>(
   const url = `${base}/player_api.php?${params.toString()}`;
 
   // In-memory cache for large list endpoints (vod_streams, live_streams, series).
-  // These can take 7-10s to fetch and rarely change, so we cache for 10 minutes.
+  // These can take 7-10s to fetch and rarely change, so we cache for 30 minutes.
   const cacheKey = url;
   const cached = xtreamCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
@@ -180,7 +180,8 @@ async function fetchXtream<T>(
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  // 25s timeout — under Vercel's 30s limit for Pro tier serverless functions.
+  const timeout = setTimeout(() => controller.abort(), 25000);
 
   try {
     const res = await fetch(url, {
@@ -188,6 +189,7 @@ async function fetchXtream<T>(
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; IPTV-Player/1.0)",
         Accept: "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate",
       },
       cache: "no-store",
     });
@@ -205,11 +207,11 @@ async function fetchXtream<T>(
       throw new Error("Xtream API returned invalid JSON");
     }
 
-    // Cache list responses (arrays) for 10 minutes to avoid slow refetches.
+    // Cache list responses (arrays) for 30 minutes to avoid slow refetches.
     if (Array.isArray(parsed)) {
       xtreamCache.set(cacheKey, {
         data: parsed,
-        expires: Date.now() + 10 * 60 * 1000,
+        expires: Date.now() + 30 * 60 * 1000,
       });
     }
 

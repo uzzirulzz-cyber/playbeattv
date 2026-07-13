@@ -39,15 +39,18 @@ export function HomeView() {
   const { data: history } = useHistory();
 
   // Fetch featured live streams + movies for the home page.
+  // These are cached for 30 min on the server, so only slow on first load.
   const { data: liveStreams } = useQuery({
     queryKey: ["streams", "live_streams"],
     queryFn: () => api<unknown[]>("/api/xtream?action=live_streams"),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    retry: 2,
   });
   const { data: vodStreams } = useQuery({
     queryKey: ["streams", "vod_streams"],
     queryFn: () => api<unknown[]>("/api/xtream?action=vod_streams"),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    retry: 2,
   });
 
   const featuredLive: MediaItem[] = useMemo(() => {

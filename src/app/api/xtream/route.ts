@@ -62,30 +62,36 @@ export async function GET(req: NextRequest) {
   const { dns, username, password } = playlist;
 
   try {
+    let response: NextResponse;
     switch (action) {
       case "auth":
-        return NextResponse.json(
+        response = NextResponse.json(
           await authenticateXtream(dns, username, password)
         );
+        break;
       case "live_categories":
-        return NextResponse.json(
+        response = NextResponse.json(
           await getLiveCategories(dns, username, password)
         );
+        break;
       case "live_streams": {
         const streams = await getLiveStreams(dns, username, password, categoryId);
-        return NextResponse.json(
+        response = NextResponse.json(
           isMember ? streams : gateContent(streams, FREE_CONTENT_FRACTION)
         );
+        break;
       }
       case "vod_categories":
-        return NextResponse.json(
+        response = NextResponse.json(
           await getVodCategories(dns, username, password)
         );
+        break;
       case "vod_streams": {
         const streams = await getVodStreams(dns, username, password, categoryId);
-        return NextResponse.json(
+        response = NextResponse.json(
           isMember ? streams : gateContent(streams, FREE_CONTENT_FRACTION)
         );
+        break;
       }
       case "vod_info":
         if (!vodId)
@@ -93,18 +99,21 @@ export async function GET(req: NextRequest) {
             { error: "vod_id required" },
             { status: 400 }
           );
-        return NextResponse.json(
+        response = NextResponse.json(
           await getVodInfo(dns, username, password, Number(vodId))
         );
+        break;
       case "series_categories":
-        return NextResponse.json(
+        response = NextResponse.json(
           await getSeriesCategories(dns, username, password)
         );
+        break;
       case "series": {
         const series = await getSeries(dns, username, password, categoryId);
-        return NextResponse.json(
+        response = NextResponse.json(
           isMember ? series : gateContent(series, FREE_CONTENT_FRACTION)
         );
+        break;
       }
       case "series_info":
         if (!seriesId)
@@ -112,12 +121,18 @@ export async function GET(req: NextRequest) {
             { error: "series_id required" },
             { status: 400 }
           );
-        return NextResponse.json(
+        response = NextResponse.json(
           await getSeriesInfo(dns, username, password, Number(seriesId))
         );
+        break;
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
+    // Cache list responses in the browser for 5 minutes to speed up navigation.
+    if (["live_streams", "vod_streams", "series", "live_categories", "vod_categories", "series_categories"].includes(action)) {
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    }
+    return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Xtream request failed";
     return NextResponse.json({ error: message }, { status: 502 });

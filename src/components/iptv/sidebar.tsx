@@ -47,6 +47,7 @@ export function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+  const openAuth = useAppStore((s) => s.openAuth);
   const { user, isAdmin, isAuthenticated } = useAuth();
 
   // Guests see browse views only; authenticated users see everything.

@@ -95,7 +95,7 @@ export function ContentCard({ item }: ContentCardProps) {
           handleClick();
         }
       }}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/60 hover:ring-2 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group relative cursor-pointer overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all duration-200 hover:border-primary/60 hover:shadow-lg hover:ring-1 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       <div
         className={cn(
@@ -109,8 +109,9 @@ export function ContentCard({ item }: ContentCardProps) {
             alt={item.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
             unoptimized
+            loading="lazy"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -157,9 +158,9 @@ export function ContentCard({ item }: ContentCardProps) {
         </button>
       </div>
 
-      <div className="p-2.5">
+      <div className="p-2">
         <h3
-          className="line-clamp-2 text-sm font-medium leading-tight text-foreground"
+          className="line-clamp-2 text-xs font-medium leading-tight text-foreground sm:text-sm"
           title={item.name}
         >
           {item.name}

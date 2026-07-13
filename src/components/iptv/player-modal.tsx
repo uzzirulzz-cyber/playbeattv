@@ -56,18 +56,24 @@ export function PlayerModal() {
     if (!video) return;
 
     // Live streams are served as HLS (m3u8) through the proxy; movies/series
-    // are direct files (mp4). The proxied URL no longer contains ".m3u8", so
-    // we detect HLS by stream type or the URL shape.
+    // are direct files. The proxied URL no longer contains ".m3u8", so we
+    // detect HLS by stream type or the URL shape.
     const isHls =
       player.type === "live" ||
       player.streamUrl.includes(".m3u8") ||
       player.streamUrl.includes("m3u8") ||
       player.streamUrl.includes("type=live");
 
+    // Check if the container extension is browser-compatible.
+    // Browsers can only play mp4/mov/webm natively — mkv/avi/flv won't work.
+    const incompatibleExt =
+      player.streamUrl.includes("ext=mkv") ||
+      player.streamUrl.includes("ext=avi") ||
+      player.streamUrl.includes("ext=flv") ||
+      player.streamUrl.includes("ext=ts");
+
     const startPlayback = () => {
       setLoading(false);
-      // Try autoplay with sound; if blocked by the browser policy, fall back
-      // to muted autoplay so the stream starts immediately.
       video
         .play()
         .catch(() => {
@@ -84,6 +90,10 @@ export function PlayerModal() {
           enableWorker: true,
           lowLatencyMode: player.type === "live",
           backBufferLength: 90,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          startLevel: -1, // auto-select quality
+          capLevelToPlayerSize: true,
         });
         hlsRef.current = hls;
         hls.loadSource(player.streamUrl);
@@ -108,22 +118,37 @@ export function PlayerModal() {
           }
         });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
         video.src = player.streamUrl;
         video.addEventListener("loadedmetadata", startPlayback, { once: true });
       } else {
         setError("HLS playback is not supported in this browser.");
         setLoading(false);
       }
+    } else if (incompatibleExt) {
+      // MKV/AVI/FLV can't play in browsers — try forcing mp4 (many servers
+      // serve the same file regardless of extension).
+      const mp4Url = player.streamUrl.replace(/ext=mkv|ext=avi|ext=flv|ext=ts/, "ext=mp4");
+      video.src = mp4Url;
+      video.addEventListener("loadedmetadata", startPlayback, { once: true });
+      video.addEventListener(
+        "error",
+        () => {
+          setError(
+            "This video format (MKV/AVI) isn't supported by browsers. Try a different title or use the live TV channels which stream in HLS format."
+          );
+          setLoading(false);
+        },
+        { once: true }
+      );
     } else {
-      // Direct file (mp4 etc.)
+      // Direct file (mp4/webm)
       video.src = player.streamUrl;
       video.addEventListener("loadedmetadata", startPlayback, { once: true });
       video.addEventListener(
         "error",
         () => {
           setError(
-            "This media could not be loaded. The server may be blocking playback."
+            "This media could not be loaded. The server may be blocking playback or the format is unsupported."
           );
           setLoading(false);
         },
@@ -262,10 +287,11 @@ export function PlayerModal() {
       >
         <video
           ref={videoRef}
-          className="max-h-full max-w-full"
+          className="h-full w-full object-contain"
           controls
           autoPlay
           playsInline
+          preload="auto"
         />
 
         {loading ? (

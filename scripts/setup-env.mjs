@@ -26,6 +26,7 @@ const envValues = {
   NEXT_PUBLIC_EASYPAISA_NUMBER: "03390005715",
   PAYPAL_SANDBOX: "true",
   BOT_HANDLER_SECRET: "playbeat-bot-2026",
+  ADMIN_LOGIN_PASSWORD: "playbeat123",
 };
 
 const envPath = path.join(__dirname, "..", ".env");

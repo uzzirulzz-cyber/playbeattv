@@ -59,6 +59,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // If this is the admin account, also sync the admin login password so the
+  // admin can sign in via the /admin login form using ADMIN_LOGIN_PASSWORD.
+  if (isAdmin && process.env.ADMIN_LOGIN_PASSWORD) {
+    const adminHashed = await hashPassword(process.env.ADMIN_LOGIN_PASSWORD);
+    await db.user.update({
+      where: { id: user.id },
+      data: { password: adminHashed },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     user: { id: user.id, email: user.email, name: user.name, role: user.role },

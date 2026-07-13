@@ -14,6 +14,7 @@ import { CategoriesView } from "@/components/iptv/categories-view";
 import { StorefrontView } from "@/components/iptv/storefront-view";
 import { AccountView } from "@/components/iptv/account-view";
 import { AdminView } from "@/components/iptv/admin-view";
+import { AdminLogin } from "@/components/iptv/admin-login";
 import { LandingView } from "@/components/iptv/landing-view";
 import { PlayerModal } from "@/components/iptv/player-modal";
 import { SeriesDetailDialog } from "@/components/iptv/series-detail";
@@ -37,17 +38,30 @@ export default function Home() {
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Handle payment redirect URLs: ?view=X&payment=Y
+  // Handle URL routing: ?view=X, #/view=X, or #view — plus payment redirects.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const viewParam = params.get("view") as ViewId | null;
-    const paymentParam = params.get("payment");
+    const { hash, search } = window.location;
+
+    // Parse view from query string (?view=X) or hash (#/storefront or #storefront)
+    let viewParam: ViewId | null = null;
+    const searchParams = new URLSearchParams(search);
+    viewParam = searchParams.get("view") as ViewId | null;
+
+    if (!viewParam && hash) {
+      // Hash routing: #/storefront or #storefront
+      const clean = hash.replace(/^#\/?/, "");
+      const hashView = clean.split(/[?&]/)[0] as ViewId;
+      if (VALID_VIEWS.includes(hashView)) {
+        viewParam = hashView;
+      }
+    }
 
     if (viewParam && VALID_VIEWS.includes(viewParam)) {
       setView(viewParam);
     }
 
+    const paymentParam = searchParams.get("payment");
     if (paymentParam) {
       const messages: Record<string, { title: string; variant: "success" | "error" | "info" }> = {
         success: { title: "Payment successful! Your subscription is now active. 🎉", variant: "success" },
@@ -81,7 +95,7 @@ export default function Home() {
   }
 
   // Public landing experience for signed-out visitors.
-  // (Storefront plans are visible, but browsing/streaming requires an account.)
+  // Storefront is visible; admin requires the admin login.
   if (!isAuthenticated) {
     return (
       <>
@@ -89,6 +103,8 @@ export default function Home() {
           <PublicShell>
             <StorefrontView />
           </PublicShell>
+        ) : view === "admin" ? (
+          <AdminLogin />
         ) : (
           <LandingView />
         )}

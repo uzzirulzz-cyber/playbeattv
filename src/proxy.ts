@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 // --- Security Firewall ---
 // Adds security headers, blocks suspicious requests, and rate-limits auth endpoints.
 
-const AUTH_RATE_LIMIT = 10; // max attempts per window
+const AUTH_RATE_LIMIT = 30; // max attempts per window
 const AUTH_WINDOW_MS = 60 * 1000; // 1 minute
-const GENERAL_RATE_LIMIT = 120; // max requests per window for streaming
+const GENERAL_RATE_LIMIT = 200; // max requests per window for streaming
 const GENERAL_WINDOW_MS = 60 * 1000;
 
 interface RateBucket {

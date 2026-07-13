@@ -61,6 +61,17 @@ export function AuthDialog() {
     e.preventDefault();
     if (busy) return;
     const activeMode = effectiveMode === "signup" ? "signup" : "signin";
+
+    // Client-side validation
+    if (!email.trim() || !password) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
     setBusy(true);
     try {
       if (activeMode === "signup") {
@@ -82,15 +93,23 @@ export function AuthDialog() {
         );
         return;
       }
+      if (res?.status === 429) {
+        toast.error("Too many attempts. Please wait a minute and try again.");
+        return;
+      }
       toast.success(activeMode === "signup" ? "Welcome to PlayBeat TV!" : "Signed in!");
       closeAuth();
       setName("");
       setEmail("");
       setPassword("");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Something went wrong."
-      );
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      // Handle rate limit error from the proxy
+      if (msg.includes("429") || msg.toLowerCase().includes("too many")) {
+        toast.error("Too many attempts. Please wait a minute and try again.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }

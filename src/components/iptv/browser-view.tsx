@@ -17,6 +17,7 @@ import {
 import type { MediaItem, StreamType } from "@/lib/types";
 import { CategoryRail, type Category } from "@/components/iptv/category-rail";
 import { ContentGrid } from "@/components/iptv/content-grid";
+import { GenreSections } from "@/components/iptv/genre-sections";
 import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -97,6 +98,29 @@ export function BrowserView({ type }: BrowserViewProps) {
 
   const loading = streamsLoading;
 
+  // Build genre sections: group items by their Xtream category, sorted by count.
+  const genreSections = useMemo(() => {
+    if (!categories || !items.length) return [];
+    const sections: Array<{ id: string; name: string; items: MediaItem[] }> = [];
+    for (const cat of categories) {
+      const catItems = items.filter((i) => i.categoryId === cat.category_id);
+      if (catItems.length > 0) {
+        sections.push({
+          id: cat.category_id,
+          name: cat.category_name,
+          items: catItems,
+        });
+      }
+    }
+    // Sort by item count descending (biggest genres first)
+    sections.sort((a, b) => b.items.length - a.items.length);
+    return sections;
+  }, [categories, items]);
+
+  // Show genre sections when viewing "all" with no search.
+  // Show flat grid when a category is selected or searching.
+  const showGenreSections = selectedCategoryId === "all" && !search.trim();
+
   // Signature so the paginated section resets when filters change
   const pageKey = `${type}|${selectedCategoryId}|${search.trim().toLowerCase()}`;
 
@@ -156,12 +180,16 @@ export function BrowserView({ type }: BrowserViewProps) {
         </Alert>
       ) : null}
 
-      <PaginatedGrid
-        key={pageKey}
-        items={filtered}
-        loading={loading}
-        search={search}
-      />
+      {showGenreSections ? (
+        <GenreSections sections={genreSections} loading={loading} />
+      ) : (
+        <PaginatedGrid
+          key={pageKey}
+          items={filtered}
+          loading={loading}
+          search={search}
+        />
+      )}
     </div>
   );
 }

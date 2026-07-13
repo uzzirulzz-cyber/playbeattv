@@ -16,6 +16,7 @@ import {
 import type { MediaItem, StreamType } from "@/lib/types";
 import { CategoryRail, type Category } from "@/components/iptv/category-rail";
 import { ContentGrid } from "@/components/iptv/content-grid";
+import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -119,6 +120,8 @@ export function BrowserView({ type }: BrowserViewProps) {
         counts={counts}
       />
 
+      <AdBanner />
+
       {error ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -158,6 +161,7 @@ function PaginatedGrid({
       <ContentGrid
         items={visible}
         loading={loading}
+        injectAdsEvery={24}
         emptyMessage={
           search
             ? `No results for "${search}".`

@@ -17,6 +17,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { api, useActivePlaylist, useHistory } from "@/hooks/use-iptv";
 import { ContentCard } from "@/components/iptv/content-card";
+import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { MediaItem } from "@/lib/types";
@@ -202,6 +203,9 @@ export function HomeView() {
           })}
         </div>
       </div>
+
+      {/* Ad banner */}
+      <AdBanner />
 
       {/* Continue watching */}
       <section>

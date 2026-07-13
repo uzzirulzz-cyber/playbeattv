@@ -1,6 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
 import { ContentCard } from "@/components/iptv/content-card";
+import { AdInFeed } from "@/components/iptv/ads";
 import type { MediaItem } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,6 +11,8 @@ interface ContentGridProps {
   loading?: boolean;
   emptyMessage?: string;
   skeletonCount?: number;
+  /** Insert an in-feed ad after every N items (0 = off). */
+  injectAdsEvery?: number;
 }
 
 export function ContentGrid({
@@ -16,6 +20,7 @@ export function ContentGrid({
   loading,
   emptyMessage = "No content found.",
   skeletonCount = 18,
+  injectAdsEvery = 0,
 }: ContentGridProps) {
   if (loading) {
     return (
@@ -45,8 +50,13 @@ export function ContentGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {items.map((item) => (
-        <ContentCard key={`${item.type}-${item.id}`} item={item} />
+      {items.map((item, i) => (
+        <Fragment key={`${item.type}-${item.id}`}>
+          <ContentCard item={item} />
+          {injectAdsEvery > 0 &&
+            (i + 1) % injectAdsEvery === 0 &&
+            i < items.length - 1 && <AdInFeed />}
+        </Fragment>
       ))}
     </div>
   );

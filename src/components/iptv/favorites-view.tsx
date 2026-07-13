@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/use-iptv";
 import { ContentGrid } from "@/components/iptv/content-grid";
+import { AdBanner } from "@/components/iptv/ads";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MediaItem, StreamType } from "@/lib/types";
 
@@ -62,9 +63,12 @@ export function FavoritesView() {
         ) : null}
       </div>
 
+      <AdBanner />
+
       <ContentGrid
         items={filtered}
         loading={isLoading}
+        injectAdsEvery={24}
         emptyMessage="No favorites yet. Tap the heart on any title to save it here."
       />
     </div>

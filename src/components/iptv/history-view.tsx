@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { History, Trash2 } from "lucide-react";
 import { useHistory } from "@/hooks/use-iptv";
 import { ContentGrid } from "@/components/iptv/content-grid";
+import { AdBanner } from "@/components/iptv/ads";
 import { Button } from "@/components/ui/button";
 import type { MediaItem } from "@/lib/types";
 
@@ -48,9 +49,12 @@ export function HistoryView() {
         ) : null}
       </div>
 
+      <AdBanner />
+
       <ContentGrid
         items={items}
         loading={isLoading}
+        injectAdsEvery={24}
         emptyMessage="Nothing watched yet. Your recently played titles will show up here."
       />
     </div>

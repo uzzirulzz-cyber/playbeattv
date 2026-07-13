@@ -102,23 +102,20 @@ export default function Home() {
     );
   }
 
-  // Public landing experience for signed-out visitors.
-  // Storefront is visible; admin requires the admin login.
+  // Public experience for signed-out visitors.
+  // Guests can browse Live TV, Movies, Series, Categories (10% free preview).
+  // Favorites, History, Account, Admin still require auth.
   if (!isAuthenticated) {
-    return (
-      <>
-        {view === "storefront" ? (
-          <PublicShell>
-            <StorefrontView />
-          </PublicShell>
-        ) : view === "admin" ? (
-          <AdminLogin />
-        ) : (
-          <LandingView />
-        )}
-        <AuthDialog />
-      </>
-    );
+    const guestViews = ["live", "movies", "series", "categories", "storefront"];
+    if (!guestViews.includes(view)) {
+      return (
+        <>
+          {view === "admin" ? <AdminLogin /> : <LandingView />}
+          <AuthDialog />
+        </>
+      );
+    }
+    // Fall through to the app shell for browseable views.
   }
 
   // Authenticated app shell.

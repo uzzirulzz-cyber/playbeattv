@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getActivePlaylist } from "@/lib/playlist";
-import { requireUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { buildStreamUrl } from "@/lib/xtream";
 import type { StreamType } from "@/lib/types";
 
@@ -96,11 +96,9 @@ async function pipeResponse(
 }
 
 export async function GET(req: NextRequest) {
-  try {
-    await requireUser();
-  } catch {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  // Allow guests (non-signed-in) to stream the free preview content.
+  // getCurrentUser returns null for guests — no auth gate here.
+  await getCurrentUser();
 
   const playlist = await getActivePlaylist();
   if (!playlist) {

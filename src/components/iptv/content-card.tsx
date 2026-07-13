@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { MediaItem } from "@/lib/types";
 import { useFavorites } from "@/hooks/use-iptv";
 import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ContentCardProps {
   item: MediaItem;
@@ -38,9 +39,27 @@ export function ContentCard({ item }: ContentCardProps) {
   const { isFavorite, toggle } = useFavorites();
   const openPlayer = useAppStore((s) => s.openPlayer);
   const openSeriesDetail = useAppStore((s) => s.openSeriesDetail);
+  const openAuth = useAppStore((s) => s.openAuth);
+  const { isAuthenticated } = useAuth();
   const [imgError, setImgError] = useState(false);
 
   const fav = isFavorite(item.id, item.type);
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      openAuth("signup");
+      return;
+    }
+    toggle({
+      streamId: item.id,
+      name: item.name,
+      type: item.type,
+      streamUrl: item.streamUrl,
+      logo: item.logo,
+      categoryId: item.categoryId,
+    });
+  };
 
   const handleClick = () => {
     if (item.type === "series") {
@@ -128,17 +147,7 @@ export function ContentCard({ item }: ContentCardProps) {
         <button
           type="button"
           aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggle({
-              streamId: item.id,
-              name: item.name,
-              type: item.type,
-              streamUrl: item.streamUrl,
-              logo: item.logo,
-              categoryId: item.categoryId,
-            });
-          }}
+          onClick={handleFavorite}
           className={cn(
             "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur transition-all hover:scale-110 hover:bg-black/80",
             fav ? "text-red-500" : "opacity-0 group-hover:opacity-100"

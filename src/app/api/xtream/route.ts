@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActivePlaylist } from "@/lib/playlist";
-import { requireUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import {
   authenticateXtream,
   getLiveCategories,
@@ -29,7 +29,6 @@ function hasActivePlan(
 function gateContent<T>(items: T[], fraction: number): T[] {
   if (fraction >= 1) return items;
   const keepCount = Math.max(1, Math.ceil(items.length * fraction));
-  // Keep evenly distributed items so the preview looks representative.
   if (items.length <= keepCount) return items;
   const step = items.length / keepCount;
   const result: T[] = [];
@@ -40,13 +39,11 @@ function gateContent<T>(items: T[], fraction: number): T[] {
 }
 
 export async function GET(req: NextRequest) {
-  // Auth gate — only signed-in users can browse content.
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Allow guests (non-signed-in) to browse — treated as free users (10% content).
+  const user = await getCurrentUser();
+  const isMember = user
+    ? hasActivePlan(user.plan, user.planExpires?.toISOString())
+    : false;
 
   const playlist = await getActivePlaylist();
   if (!playlist) {
@@ -63,7 +60,6 @@ export async function GET(req: NextRequest) {
   const vodId = searchParams.get("vod_id");
 
   const { dns, username, password } = playlist;
-  const isMember = hasActivePlan(user.plan, user.planExpires);
 
   try {
     switch (action) {

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   LogOut,
   LayoutGrid,
+  PlayCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
@@ -46,9 +47,15 @@ export function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isAuthenticated } = useAuth();
 
-  const nav = NAV.filter((n) => !n.adminOnly);
+  // Guests see browse views only; authenticated users see everything.
+  const nav = NAV.filter((n) => {
+    if (n.adminOnly) return isAuthenticated && isAdmin;
+    // Favorites/History/Account require auth
+    if (["favorites", "history", "account"].includes(n.id)) return isAuthenticated;
+    return true;
+  });
   const adminItems = NAV.filter((n) => n.adminOnly);
   return (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
@@ -128,35 +135,51 @@ export function Sidebar() {
 
       {/* User + footer */}
       <div className="border-t border-sidebar-border p-3">
-        <button
-          type="button"
-          onClick={() => {
-            setView("account");
-            setSidebarOpen(false);
-          }}
-          className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full brand-gradient text-sm font-bold text-white">
-            {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">
-              {user?.name || "Member"}
-            </p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {user?.email}
-            </p>
-          </div>
-        </button>
+        {isAuthenticated ? (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setView("account");
+                setSidebarOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full brand-gradient text-sm font-bold text-white">
+                {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-sidebar-foreground">
+                  {user?.name || "Member"}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {user?.email}
+                </p>
+              </div>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </button>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              openAuth("signup");
+              setSidebarOpen(false);
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg brand-gradient px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Sign up free
+          </button>
+        )}
 
         <div className="mt-2 flex items-center gap-1.5 px-3 pt-2 text-[10px] text-muted-foreground">
           <ShieldCheck className="h-3 w-3" />

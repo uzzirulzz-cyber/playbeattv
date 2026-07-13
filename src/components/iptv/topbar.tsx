@@ -78,12 +78,11 @@ export function Topbar() {
         ) : (
           <Button
             size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => openAuth("signin")}
+            className="gap-1.5 brand-gradient text-white"
+            onClick={() => openAuth("signup")}
           >
             <LogIn className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign in</span>
+            <span className="hidden sm:inline">Sign up free</span>
           </Button>
         )}
 

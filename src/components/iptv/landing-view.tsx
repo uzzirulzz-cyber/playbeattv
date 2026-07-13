@@ -34,7 +34,7 @@ export function LandingView() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background" style={{ minHeight: "100vh" }}>
       {/* Top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-2.5">

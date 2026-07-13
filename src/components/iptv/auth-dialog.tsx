@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, getProviders } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -30,17 +30,16 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  AlertCircle,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { api } from "@/hooks/use-iptv";
 import { toast } from "sonner";
 
-const GOOGLE_READY = !!(
-  process.env.NEXT_PUBLIC_GOOGLE_ENABLED === "1"
-);
-const FACEBOOK_READY = !!(
-  process.env.NEXT_PUBLIC_FACEBOOK_ENABLED === "1"
-);
+interface ProviderInfo {
+  id: string;
+  name: string;
+}
 
 export function AuthDialog() {
   const { authOpen, authMode, closeAuth, openAuth } = useAppStore();
@@ -103,20 +102,36 @@ export function AuthDialog() {
     }
   };
 
+  // Detect which OAuth providers are actually configured on the backend.
+  const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
+  const [oauthBusy, setOauthBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authOpen) {
+      getProviders()
+        .then((p) => setProviders(p ? Object.values(p) : []))
+        .catch(() => setProviders([]));
+    }
+  }, [authOpen]);
+
+  const googleReady = !!providers?.some((p) => p.id === "google");
+  const facebookReady = !!providers?.some((p) => p.id === "facebook");
+
   const oauth = async (provider: "google" | "facebook") => {
-    if (provider === "google" && !GOOGLE_READY) {
-      toast.info(
-        "Google sign-in is coming soon. Please use email sign-up for now."
+    const ready = provider === "google" ? googleReady : facebookReady;
+    if (!ready) {
+      toast.error(
+        `${provider === "google" ? "Google" : "Facebook"} sign-in isn't configured yet. Use email sign-up — it works instantly!`
       );
       return;
     }
-    if (provider === "facebook" && !FACEBOOK_READY) {
-      toast.info(
-        "Facebook sign-in is coming soon. Please use email sign-up for now."
-      );
-      return;
+    setOauthBusy(provider);
+    try {
+      await signIn(provider, { callbackUrl: "/" });
+    } catch {
+      setOauthBusy(null);
+      toast.error("Sign-in failed. Please try again.");
     }
-    await signIn(provider, { callbackUrl: "/" });
   };
 
   const isSignup = effectiveMode === "signup";
@@ -162,24 +177,47 @@ export function AuthDialog() {
               variant="outline"
               className="w-full gap-2"
               onClick={() => oauth("google")}
+              disabled={oauthBusy === "google" || providers === null}
             >
-              <GoogleIcon className="h-4 w-4" />
+              {oauthBusy === "google" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <GoogleIcon className="h-4 w-4" />
+              )}
               Continue with Google
+              {!googleReady && providers !== null ? (
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  not configured
+                </span>
+              ) : null}
             </Button>
             <Button
               type="button"
               variant="outline"
               className="w-full gap-2"
               onClick={() => oauth("facebook")}
+              disabled={oauthBusy === "facebook" || providers === null}
             >
-              <FacebookIcon className="h-4 w-4" />
+              {oauthBusy === "facebook" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FacebookIcon className="h-4 w-4" />
+              )}
               Continue with Facebook
+              {!facebookReady && providers !== null ? (
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  not configured
+                </span>
+              ) : null}
             </Button>
           </div>
 
+          {/* Email is the primary, always-working path */}
           <div className="my-4 flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">or</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              or sign up with email (instant)
+            </span>
             <Separator className="flex-1" />
           </div>
 

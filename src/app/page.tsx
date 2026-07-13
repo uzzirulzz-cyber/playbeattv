@@ -69,7 +69,7 @@ export default function Home() {
   // Loading splash while the session resolves.
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex flex-col items-center justify-center gap-4 bg-background" style={{ minHeight: "100vh" }}>
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient text-white">
           <PlayCircle className="h-8 w-8" />
         </div>
@@ -100,8 +100,8 @@ export default function Home() {
 
   // Authenticated app shell.
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="flex flex-1">
+    <div className="flex flex-col bg-background" style={{ minHeight: "100vh" }}>
+      <div className="flex flex-1 min-h-0">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
           <div className="sticky top-0 h-screen">
@@ -168,7 +168,7 @@ function PublicShell({ children }: { children: React.ReactNode }) {
   const setView = useAppStore((s) => s.setView);
   const openAuth = useAppStore((s) => s.openAuth);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background" style={{ minHeight: "100vh" }}>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
         <button
           type="button"

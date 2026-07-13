@@ -102,3 +102,27 @@ Stage Summary (Agent Browser verified):
 - Admin panel: 2 users, 1 admin, backend Online. ✅
 - No console/page errors. Lint clean.
 - Credentials still hidden: FHHNUEH, 2HSJRV6, njqqh.mor-esp.cc all absent from page text.
+
+---
+Task ID: 27
+Agent: main (Z.ai Code)
+Task: Fix core issues — Google/Facebook login buttons non-functional, footer floating on mobile.
+
+Work Log:
+- OAuth buttons: Removed the hardcoded "coming soon" gate (GOOGLE_READY/FACEBOOK_READY env flags that were never set). Now uses NextAuth's getProviders() to detect which OAuth providers are actually configured on the backend. Buttons show "not configured" label when the provider isn't set up, and show a clear error toast ("Google sign-in isn't configured yet. Use email sign-up — it works instantly!") when clicked. When credentials ARE added to .env, the buttons attempt real OAuth immediately — no code changes needed.
+- Email signup: Made the primary, always-working path. Changed separator text from "or" to "or sign up with email (instant)" to guide users to the working option.
+- Footer fix: The `min-h-screen` Tailwind class wasn't generating `min-height: 100vh` on the app shell div (computed to 0px due to a cascade issue). Replaced with inline `style={{ minHeight: "100vh" }}` on the app shell, loading splash, landing view, and public shell. Added `min-h-0` to the content wrapper for proper nested flex behavior. Footer now correctly sticks to the bottom on both mobile and desktop.
+
+Stage Summary (Agent Browser verified):
+- Google button: shows "not configured" label, clicking shows clear error toast (no more "coming soon"). ✅
+- Facebook button: same behavior. ✅
+- Email signup: works end-to-end (signup → signed in → app shell). ✅
+- Streaming: movie played (currentTime advancing, no errors, credentials hidden via proxy). ✅
+- Storefront: PKR pricing (₨420/₨1,050/₨3,360). ✅
+- Categories: 15 tiles load. ✅
+- Favorites: add/view works. ✅
+- Footer: atBottom=true on mobile (390px) and desktop (1440px). ✅
+- Credentials hidden: [] (none of FHHNUEH, 2HSJRV6, njqqh.mor-esp.cc, Expires, 0/1 appear). ✅
+- No console errors, no dev log errors. ✅
+
+Note: Google/Facebook OAuth will work the instant GOOGLE_CLIENT_ID/SECRET and FACEBOOK_CLIENT_ID/SECRET are added to .env. The buttons are wired to attempt real OAuth via NextAuth — they just need credentials.

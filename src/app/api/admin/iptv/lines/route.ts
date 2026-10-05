@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     lines: lines.map(l => ({
       id: l.id,
       username: l.username,
+      serverUrl: l.serverUrl,
       conx: l.conx,
       plan: l.plan,
       planLabel: planLabel(l.plan),
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
   const action = body.action || "create"
 
   if (action === "create") {
-    const { username, password, conx, bid, plan, addChannels, addVods, adults, notice } = body
+    const { username, password, serverUrl, conx, bid, plan, addChannels, addVods, adults, notice } = body
     if (!username || !password) return NextResponse.json({ error: "username and password required" }, { status: 400 })
     if (username.length < 6 || username.length > 23) return NextResponse.json({ error: "username must be 6-23 chars" }, { status: 400 })
     if (!/^[a-z0-9._-]+$/i.test(username)) return NextResponse.json({ error: "username allows only a-z, 0-9, ., _, -" }, { status: 400 })
@@ -61,14 +62,28 @@ export async function POST(req: NextRequest) {
     const existing = await db.iptvLine.findUnique({ where: { username } })
     if (existing) return NextResponse.json({ error: "username already exists locally" }, { status: 400 })
 
-    const result = await createLine({ username, password, conx: parseInt(conx) || 1, bid: bid || "[5,11]", plan: parseInt(plan) || 11, addChannels, addVods, adults, notice })
-    if (!result.ok) return NextResponse.json({ error: result.msg }, { status: 400 })
+    // If serverUrl is provided, this is a customer-side line on a 3rd-party panel
+    // (no reseller API call needed — just store the credentials locally so we can
+    // proxy M3U requests). Otherwise, this is a reseller-managed line — call the
+    // Xtream Masters reseller API to actually provision it.
+    let result: { ok: boolean; demo: boolean; msg: string } = { ok: true, demo: false, msg: "Customer-side line — no reseller API call needed" }
+    if (!serverUrl) {
+      result = await createLine({
+        username, password,
+        conx: parseInt(conx) || 1,
+        bid: bid || "[5,11]",
+        plan: parseInt(plan) || 11,
+        addChannels, addVods, adults, notice,
+      })
+      if (!result.ok) return NextResponse.json({ error: result.msg }, { status: 400 })
+    }
 
     const startsAt = new Date()
     const expiresAt = computeExpiry(startsAt, parseInt(plan) || 11)
     const line = await db.iptvLine.create({
       data: {
         username, password,
+        serverUrl: serverUrl || null,
         conx: parseInt(conx) || 1,
         plan: parseInt(plan) || 11,
         bid: bid || "[5,11]",
@@ -87,7 +102,7 @@ export async function POST(req: NextRequest) {
         action: "iptv.line.created",
         targetType: "iptv_line",
         target: line.id,
-        detail: JSON.stringify({ username, plan, bid, demo: result.demo }),
+        detail: JSON.stringify({ username, plan, bid, serverUrl: serverUrl || "(reseller)", demo: result.demo }),
         ip: getClientIp(req),
       },
     }).catch(() => {})

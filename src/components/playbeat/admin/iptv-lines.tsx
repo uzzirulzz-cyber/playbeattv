@@ -7,6 +7,7 @@ import { PLANS, BOUQUETS } from "@/lib/xtream/client"
 interface Line {
   id: string
   username: string
+  serverUrl: string | null
   conx: number
   plan: number
   planLabel: string
@@ -136,6 +137,7 @@ export function AdminIptvLines() {
                     <span className="rounded bg-white/5 px-1.5 py-0.5">{line.bouquetLabel}</span>
                     <span className="rounded bg-white/5 px-1.5 py-0.5">CONX {line.conx}</span>
                     {line.adults && <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-red-300">Adult</span>}
+                    {line.serverUrl && <span className="rounded bg-cyan-500/10 px-1.5 py-0.5 text-cyan-300 truncate max-w-[180px]" title={line.serverUrl}>{line.serverUrl}</span>}
                     <span>Created {new Date(line.startsAt).toLocaleDateString()}</span>
                     {line.expiresAt && <span>· expires {new Date(line.expiresAt).toLocaleDateString()}</span>}
                   </div>
@@ -194,6 +196,7 @@ function StatusPill({ status }: { status: string }) {
 function CreateLineForm({ onSubmit, onCancel, loading }: { onSubmit: (form: any) => void; onCancel: () => void; loading: boolean }) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [serverUrl, setServerUrl] = useState("")
   const [conx, setConx] = useState(1)
   const [plan, setPlan] = useState(11)
   const [bid, setBid] = useState("[5,11]")
@@ -208,18 +211,25 @@ function CreateLineForm({ onSubmit, onCancel, loading }: { onSubmit: (form: any)
     if (username.length < 6 || username.length > 23) { alert("Username must be 6-23 characters"); return }
     if (!/^[a-z0-9._-]+$/i.test(username)) { alert("Username allows only a-z, 0-9, ., _, -"); return }
     if (!/^[a-z0-9._-]+$/i.test(password)) { alert("Password allows only a-z, 0-9, ., _, -"); return }
-    onSubmit({ username, password, conx, plan, bid, addChannels, addVods, adults, notice })
+    onSubmit({ username, password, serverUrl: serverUrl || undefined, conx, plan, bid, addChannels, addVods, adults, notice })
   }
 
   return (
     <form onSubmit={submit} className="rounded-xl border border-amber-400/30 bg-amber-500/[0.03] p-4 space-y-3">
-      <h4 className="text-sm font-semibold text-white">Create new Xtream line</h4>
+      <h4 className="text-sm font-semibold text-white">Create / register Xtream line</h4>
+      <p className="text-xs text-zinc-500">
+        If you provide a <strong>Server URL</strong>, this is treated as a customer-side line on a 3rd-party panel (no reseller API call needed — credentials stored locally so we can proxy M3U requests).
+        Leave Server URL empty to provision a line via the reseller API (consumes credits).
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Username (6-23 chars)">
           <input value={username} onChange={e => setUsername(e.target.value)} className="w-full rounded border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" placeholder="john_doe" />
         </Field>
         <Field label="Password (6-23 chars)">
           <input value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded border border-white/10 bg-white/5 px-3 py-2 text-sm text-white" placeholder="******" />
+        </Field>
+        <Field label="Server URL (optional — for 3rd-party panel lines)">
+          <input value={serverUrl} onChange={e => setServerUrl(e.target.value)} className="w-full rounded border border-white/10 bg-white/5 px-3 py-2 text-sm text-white font-mono" placeholder="http://panel.example.com:8080" />
         </Field>
         <Field label="Plan">
           <select value={plan} onChange={e => setPlan(parseInt(e.target.value))} className="w-full rounded border border-white/10 bg-white/5 px-3 py-2 text-sm text-white">
@@ -254,7 +264,7 @@ function CreateLineForm({ onSubmit, onCancel, loading }: { onSubmit: (form: any)
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onCancel} className="rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-400 hover:bg-white/10">Cancel</button>
         <button type="submit" disabled={loading} className="rounded bg-amber-500 px-4 py-1.5 text-xs font-semibold text-black hover:bg-amber-400 disabled:opacity-50">
-          {loading ? "Creating…" : "Create Line"}
+          {loading ? "Creating…" : "Save Line"}
         </button>
       </div>
     </form>

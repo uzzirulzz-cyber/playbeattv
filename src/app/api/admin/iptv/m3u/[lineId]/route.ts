@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { fetchM3uPlaylist, demoM3uPlaylist, isXtreamConfigured, getServerUrl, buildM3uUrl } from "@/lib/xtream/client"
+import { fetchM3uPlaylist, demoM3uPlaylist, isXtreamConfigured, getServerUrl } from "@/lib/xtream/client"
 
 export const dynamic = "force-dynamic"
 
@@ -23,7 +23,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ lineId: st
     return NextResponse.json({ error: "Line not found or inactive" }, { status: 404 })
   }
 
-  const serverUrl = getServerUrl()
+  // Resolve server URL: per-line serverUrl wins, else env
+  const serverUrl = line.serverUrl || getServerUrl()
   if (!serverUrl || !isXtreamConfigured()) {
     // Demo mode — return demo playlist so the player still works
     return new NextResponse(demoM3uPlaylist(), {
@@ -36,7 +37,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ lineId: st
 
   const { text, ok, error } = await fetchM3uPlaylist(serverUrl, line.username, line.password)
   if (!ok) {
-    return NextResponse.json({ error: `Failed to fetch playlist: ${error}`, m3uUrl: buildM3uUrl(serverUrl, line.username, line.password) }, { status: 502 })
+    return NextResponse.json({ error: `Failed to fetch playlist: ${error}` }, { status: 502 })
   }
 
   return new NextResponse(text, {

@@ -83,3 +83,32 @@ Stage Summary:
 - Demo mode ensures the entire admin UI is explorable without a real reseller account
 - Going live requires only: set XTREAM_API_KEY + XTREAM_SERVER_URL env vars, then click "Enable IPTV module" in Admin → Settings
 - End-to-end verified with Agent Browser: Live TV grid renders with channel cards, clicking a channel opens the player with amber premium-notice, admin IPTV overview shows demo credit balance (1088.73) and trial usage (7/50), creating a demo line works and shows in the list with ACTIVE status + Extend/Delete buttons
+
+---
+Task ID: 3
+Agent: main (super-z)
+Task: Wire up real IPTV subscription credentials (geotv.space:8880 / 9ca33be7 / 2cc19fe5) to the Premium IPTV module
+
+Work Log:
+- Tested M3U URL fetch from http://geotv.space:8880/get.php?username=9ca33be7&password=2cc19fe5&type=m3u_plus — returned 219KB / 1702 lines / 851 live channels across 23 groups (Bollywood, Hollywood, Hindi News, Pakistani News, Sports, Cricket, Kids, Islamic, etc.)
+- Tested .m3u8 HLS variant: server returns 302 redirect to load-balanced CDN with auth token, returns proper HLS playlist — hls.js can play these
+- Extended IptvLine Prisma model with new `serverUrl` field (per-line server URL, overrides env XTREAM_SERVER_URL when set)
+- Updated M3U proxy at /api/admin/iptv/m3u/[lineId] to use line.serverUrl || env
+- Updated public /api/iptv/channels endpoint to:
+  - Auto-pick the most recent active line if no lineId is given
+  - Use line.serverUrl (3rd-party panel line) when set, else fall back to env XTREAM_SERVER_URL (reseller-managed line)
+  - Convert .ts stream URLs to .m3u8 so the browser can play them via hls.js (Xtream servers expose both endpoints; .m3u8 returns 302 → load-balanced CDN with auth token)
+- Updated admin create-line form with new optional "Server URL" field — when filled, the line is treated as a customer-side line on a 3rd-party panel (no reseller API call / no credit consumption, just credential storage for M3U proxy). When empty, the existing reseller-managed flow runs (calls Xtream Masters reseller API to actually provision the line)
+- Updated line list to display the serverUrl badge for 3rd-party lines
+- Wrote and ran scripts/seed-iptv-line.ts to seed the real subscription:
+  - serverUrl: http://geotv.space:8880
+  - username: 9ca33be7 / password: 2cc19fe5
+  - plan: 12 months / bid: [4,7] (Worldwide With Adult) / conx: 1
+  - expiresAt: 2026-11-02 / status: active
+  - Confirmed M3U returns 851 channels on first fetch
+
+Stage Summary:
+- Public Live TV view now pulls 851 real channels from geotv.space — verified by clicking Ten Sports HD → live UEFA Nations League match (Portugal vs Norway 0-0) started playing in the video player
+- Admin → IPTV → Xtream Lines shows the real line with username 9ca33be7, serverUrl http://geotv.space:8880, ACTIVE status, 12 Months plan, Worldwide (With Adult) bouquet
+- The architecture cleanly separates two line types: (1) 3rd-party customer-side lines (with per-line serverUrl, no reseller API), and (2) reseller-managed lines (provisioned via Xtream Masters API, consume credits)
+- No env vars needed for this integration — the line carries its own server URL. Reseller API key (XTREAM_API_KEY) is only needed for the separate reseller CRUD workflow.

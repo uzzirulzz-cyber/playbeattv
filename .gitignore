@@ -72,3 +72,5 @@ upload/
 /mini-services/
 /.zscripts/dev.log
 /.zscripts/dev.pid
+/download/
+/worklog.md

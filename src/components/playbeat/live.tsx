@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useApp } from "@/stores/app"
-import { Loader2, Tv, AlertCircle, Filter } from "lucide-react"
+import { Loader2, Tv, AlertCircle, ExternalLink, Filter } from "lucide-react"
 
 interface IptvChannel {
   name: string
@@ -24,6 +24,8 @@ export function LiveView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [demo, setDemo] = useState(false)
+  const [lineId, setLineId] = useState<string | null>(null)
+  const [lineLabel, setLineLabel] = useState<string>("")
   const [filter, setFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [q, setQ] = useState("")
@@ -42,6 +44,8 @@ export function LiveView() {
         setGroups(d.groups || [])
         setDemo(d.demo)
         setError(d.error)
+        setLineId(d.lineId || null)
+        setLineLabel(d.lineLabel || "")
       })
       .catch(e => setError(e.message || String(e)))
       .finally(() => !cancel && setLoading(false))
@@ -50,15 +54,41 @@ export function LiveView() {
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 sm:px-8 py-6">
-      <div className="mb-6 flex items-baseline gap-3">
-        <Tv className="h-7 w-7 text-amber-300" />
-        <div>
-          <h1 className="text-2xl font-bold text-white">Premium Live TV</h1>
-          <p className="mt-0.5 text-sm text-zinc-500">
-            {demo ? "Demo preview — sample channels. Connect an IPTV line to stream your full bouquet." : "Streaming from your active IPTV line."}
-          </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-baseline gap-3">
+          <Tv className="h-7 w-7 text-amber-300" />
+          <div>
+            <h1 className="text-2xl font-bold text-white">Premium Live TV</h1>
+            <p className="mt-0.5 text-sm text-zinc-500">
+              {demo
+                ? "Demo preview — sample channels. Connect an IPTV line to stream your full bouquet."
+                : lineLabel
+                  ? `Streaming from line "${lineLabel}" · ${channels.length} channels`
+                  : "Streaming from your active IPTV line."}
+            </p>
+          </div>
         </div>
+        {lineId && (
+          <a
+            href={`/api/iptv/webplayer/${lineId}`}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/20"
+            title="Open the Xtream Masters web player with your line's credentials pre-filled"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Open in Web Player
+          </a>
+        )}
       </div>
+
+      {/* Info banner explaining the web player option */}
+      {lineId && (
+        <div className="mb-4 rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-3 text-xs text-amber-200/80">
+          <strong className="text-amber-200">Two ways to watch:</strong> Use the in-app grid below for quick channel surfing, or click
+          <strong className="text-amber-200"> Open in Web Player</strong> above for the full upstream player with EPG, VOD browser, series, and multi-screen switching.
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="mb-6 space-y-3">

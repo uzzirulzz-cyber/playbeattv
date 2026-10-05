@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, Plus, Trash2, RefreshCw, Copy, Eye, EyeOff } from "lucide-react"
+import { Loader2, Plus, Trash2, RefreshCw, Copy, Eye, EyeOff, ExternalLink } from "lucide-react"
 import { PLANS, BOUQUETS } from "@/lib/xtream/client"
 
 interface Line {
@@ -142,16 +142,30 @@ export function AdminIptvLines() {
                     {line.expiresAt && <span>· expires {new Date(line.expiresAt).toLocaleDateString()}</span>}
                   </div>
                   {revealed.has(line.id) && (
-                    <div className="mt-2 rounded bg-black/40 p-2 text-[10px] text-zinc-400 font-mono">
+                    <div className="mt-2 rounded bg-black/40 p-2 text-[10px] text-zinc-400 font-mono space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-zinc-500">M3U:</span>
                         <code className="flex-1 truncate">/api/admin/iptv/m3u/{line.id}</code>
                         <button
                           onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/api/admin/iptv/m3u/${line.id}`)}
                           className="text-cyan-300 hover:text-cyan-200"
+                          title="Copy M3U URL"
                         >
                           <Copy className="h-3 w-3" />
                         </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Web:</span>
+                        <code className="flex-1 truncate text-amber-300">/api/iptv/webplayer/{line.id}</code>
+                        <a
+                          href={`/api/iptv/webplayer/${line.id}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-amber-300 hover:text-amber-200"
+                          title="Open in Xtream Masters web player (auto-fills credentials)"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
                   )}

@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
     total: channels.length,
     demo: isDemo,
     lineLabel,
+    lineId: lineId && lineId !== "demo" ? lineId : null,
     serverUrl: lineServerUrl,
   })
 }

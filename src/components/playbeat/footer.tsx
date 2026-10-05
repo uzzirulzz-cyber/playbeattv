@@ -4,6 +4,19 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-white/5 bg-[#050710] px-4 sm:px-8 py-8 text-xs text-zinc-500">
       <div className="mx-auto max-w-[1600px]">
+        {/* PlayBeat family brand strip */}
+        <div className="mb-8 flex justify-center">
+          <img
+            src="/playbeat-footer-logos.svg"
+            alt="PlayBeat family: playbeat.digital, playbeat.live, playbeatdigital.world, playbeattv.buzz"
+            className="w-full max-w-[1100px] h-auto"
+            loading="lazy"
+            // SVG is 1280x460 — preserve aspect ratio, let it scale down on mobile
+            width={1280}
+            height={460}
+          />
+        </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div className="col-span-2">
             <div className="flex items-baseline">

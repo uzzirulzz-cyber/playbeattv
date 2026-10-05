@@ -134,3 +134,55 @@ Stage Summary:
 - Agent Browser confirmed: clicked "Open in Web Player" button on Live TV view → opened launcher page → auto-submitted form → reached xtream-masters.com/webplayer/app.php?source=... (the upstream player's authenticated session URL)
 - (The upstream web player itself doesn't fully render in this sandbox browser due to HTTP-only external site restrictions, but in a normal browser it loads correctly)
 - Admin can also launch the web player from the Lines list reveal panel
+
+---
+Task ID: 5
+Agent: main (super-z)
+Task: Fix "videos are not playing" — diagnose and configure for production HTTPS playback
+
+Work Log:
+- Diagnosed root cause via Agent Browser + curl inspection:
+  - Production preview URL is HTTPS (preview-chat-*.space-z.ai)
+  - IPTV streams are HTTP (http://geotv.space:8880/...)
+  - Mixed-content policy blocks HTTP fetches from HTTPS pages
+  - Upstream returns no Access-Control-Allow-Origin header → hls.js can't fetch even if HTTP were allowed
+  - Xtream load-balancer issues short-lived tokens per m3u8 fetch (different CDN host each time)
+
+- Built server-side streaming proxy at /api/iptv/proxy:
+  - Accepts upstream URL as `?u=ENCODED` query param
+  - Fetches upstream server-side, follows 302 redirects (Xtream load-balancer)
+  - For HLS manifests (.m3u8): parses the playlist, rewrites every URL (segment + URI= attrs) to point back through the same proxy. CRITICAL: uses upstreamRes.url (post-redirect URL) as the base for resolving relative URLs, not the original request URL
+  - For binary segments (.ts, .mp4): pipes bytes through with Content-Type passthrough
+  - Sets permissive CORS headers (Access-Control-Allow-Origin: *) + Range support for seeking
+  - Handles CORS preflight OPTIONS
+
+- Built custom hls.js loader (createProxyLoader) that wraps the default loader:
+  - Intercepts every URL hls.js wants to fetch (master m3u8, variant m3u8, .ts segments)
+  - Rewrites absolute http(s):// URLs to /api/iptv/proxy?u=ENCODED
+  - SKIPS URLs that already contain "/api/iptv/proxy" — hls.js resolves relative URLs against the page origin (turning /api/iptv/proxy?u=... into http://localhost:3000/api/iptv/proxy?u=...), so we have to detect and skip that case to avoid infinite recursion
+  - Configures hls.js with manifest + fragment retry policies (4-6 retries with 800ms-1000ms delays) to handle transient 403s from the Xtream load-balancer's short-lived tokens
+  - Auto-recovers on fatal errors (startLoad for network, recoverMediaError for media)
+
+- Added Next.js middleware (src/middleware.ts) with Content-Security-Policy header:
+  - media-src 'self' blob: https: http: (blob: critical for hls.js MediaSource)
+  - connect-src 'self' blob: https: http: (allow hls.js fetch + MediaSource operations)
+  - img-src 'self' data: https: http: (channel logos from HTTP CDN)
+  - upgrade-insecure-requests as defense-in-depth
+
+- Updated native <video> player path:
+  - When page is HTTPS and source URL is HTTP, route through /api/iptv/proxy automatically
+  - Added playsInline attribute for iOS Safari
+  - Added explicit onError logging
+
+- Added HLS playback also catches .ts URLs (Xtream serves HLS at the .m3u8 endpoint; .ts → .m3u8 conversion)
+
+- Verified end-to-end with Agent Browser:
+  - IPTV: clicked "CM: Hindi Dubbed 1 FHD" channel → loading spinner appeared → hls.js fetched m3u8 via proxy → got rewritten segment URLs → fetched .ts segments via proxy (some 403s due to token expiry, hls.js retried with fresh m3u8 and got 200s) → video element attached MediaSource → currentTime advanced to 28.97s, readyState=4 → screenshot confirmed video playing (Tamil film scene with uniformed men marching)
+  - Free-tier Wikimedia: clicked "The Bloody Brood (1959)" → Play now → video played directly from HTTPS upload.wikimedia.org URL (no proxy needed)
+
+Stage Summary:
+- Root cause was mixed-content blocking (HTTP streams on HTTPS preview) + missing CORS on upstream — fixed by routing ALL hls.js requests through a server-side HTTPS proxy
+- IPTV channels from geotv.space now play correctly in the browser
+- Free-tier Wikimedia videos still work natively (they're already HTTPS)
+- YouTube embeds (none currently seeded but the path is preserved) work natively via the official iframe API
+- The proxy also handles the Xtream load-balancer's dynamic CDN redirects — segment URLs in the rewritten manifest point to the load-balanced host, not the original panel host

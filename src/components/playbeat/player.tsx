@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { AlertCircle } from "lucide-react"
 import { useApp } from "@/stores/app"
 
 export interface PlayerProps {
@@ -62,17 +63,28 @@ export function PlayerAdapter(props: PlayerProps) {
   }
 
   // ============== WIKIMEDIA / DIRECT MP4 / WEBM ==============
-  // Wikimedia files are typically .webm — play natively
+  // ============== WIKIMEDIA / DIRECT MP4 / WEBM ==============
+  // Wikimedia files are typically .webm — play natively.
   // For .m3u8/.mpd we'd need hls.js/dash.js — handle in next iteration
   const videoUrl = streamUrl || embedUrl
+  // Route HTTP direct-stream URLs through our proxy when the page is served
+  // over HTTPS (mixed-content protection).
+  const safeDirectUrl = (() => {
+    if (!videoUrl) return videoUrl
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && /^http:\/\//.test(videoUrl)) {
+      return proxifyUrl(videoUrl)
+    }
+    return videoUrl
+  })()
   if (videoUrl && (videoUrl.endsWith(".mp4") || videoUrl.endsWith(".webm") || videoUrl.endsWith(".ogv") || videoUrl.endsWith(".ogg"))) {
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
         <video
-          src={videoUrl}
+          src={safeDirectUrl}
           poster={poster || undefined}
           controls
           autoPlay
+          playsInline
           className="absolute inset-0 h-full w-full bg-black"
           onLoadedMetadata={(e) => {
             const v = e.currentTarget
@@ -83,6 +95,9 @@ export function PlayerAdapter(props: PlayerProps) {
             const v = e.currentTarget
             setPosition(Math.floor(v.currentTime))
           }}
+          onError={(e) => {
+            console.error("native video error", e.currentTarget.error)
+          }}
         >
           Your browser does not support the video tag.
         </video>
@@ -91,9 +106,11 @@ export function PlayerAdapter(props: PlayerProps) {
   }
 
   // ============== HLS ==============
-  if (videoUrl && videoUrl.endsWith(".m3u8")) {
-    // Dynamic import of hls.js
-    return <HlsPlayer src={videoUrl} poster={poster} title={title} onTime={(p, d) => { setPosition(p); setDuration(d) }} />
+  // Any .m3u8 URL OR .ts URL (Xtream serves HLS at the .m3u8 endpoint) — route via hls.js
+  if (videoUrl && (videoUrl.endsWith(".m3u8") || videoUrl.endsWith(".ts"))) {
+    // For .ts URLs, switch to .m3u8 (Xtream serves HLS at that endpoint)
+    const hlsUrl = videoUrl.endsWith(".ts") ? videoUrl.replace(/\.ts$/, ".m3u8") : videoUrl
+    return <HlsPlayer src={hlsUrl} poster={poster} title={title} onTime={(p, d) => { setPosition(p); setDuration(d) }} />
   }
 
   // ============== DASH ==============
@@ -127,7 +144,8 @@ export function PlayerAdapter(props: PlayerProps) {
 
 function HlsPlayer({ src, poster, title, onTime }: { src: string; poster?: string | null; title: string; onTime: (p: number, d: number) => void }) {
   const ref = useRef<HTMLVideoElement>(null)
-  const [err, setErr] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
     let hls: any
     import("hls.js").then((mod) => {
@@ -135,30 +153,73 @@ function HlsPlayer({ src, poster, title, onTime }: { src: string; poster?: strin
       const v = ref.current
       if (!v) return
       if (Hls.isSupported()) {
-        hls = new Hls()
+        hls = new Hls({
+          // Critical config: route ALL segment + playlist requests through our
+          // HTTPS proxy so we avoid mixed-content blocking and CORS errors
+          // when the upstream is HTTP-only or doesn't return CORS headers.
+          loader: createProxyLoader(Hls.DefaultConfig.loader),
+          // Be tolerant of slightly malformed manifests
+          manifestLoadingMaxRetry: 4,
+          manifestLoadingRetryDelay: 1000,
+          levelLoadingMaxRetry: 4,
+          fragLoadingMaxRetry: 6,
+          fragLoadingRetryDelay: 800,
+          // Live stream tuning
+          liveDurationInfinity: true,
+          liveBackBufferLength: 30,
+        })
         hls.loadSource(src)
         hls.attachMedia(v)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(() => {}))
-        hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) setErr(true)
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          setLoading(false)
+          v.play().catch(() => {})
+        })
+        hls.on(Hls.Events.ERROR, (_evt: any, data: any) => {
+          if (data.fatal) {
+            // Try to recover before giving up
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad()
+                break
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError()
+                break
+              default:
+                setErr(`HLS fatal: ${data.details || data.type}`)
+                break
+            }
+          }
         })
       } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-        v.src = src
+        // Safari supports HLS natively — but won't proxy through our loader.
+        // If src is HTTP and we're on HTTPS, this will fail; fall back to proxy URL.
+        v.src = proxifyUrl(src)
         v.play().catch(() => {})
+        setLoading(false)
       } else {
-        setErr(true)
+        setErr("HLS not supported in this browser")
       }
-    }).catch(() => setErr(true))
+    }).catch(() => setErr("Failed to load hls.js"))
     return () => { try { hls?.destroy() } catch {} }
   }, [src])
-  if (err) return <FallbackNoPlay title={title} />
+
+  if (err) return <FallbackNoPlay title={title} reason={err} />
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 text-zinc-300">
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
+            <span className="text-sm">Loading stream…</span>
+          </div>
+        </div>
+      )}
       <video
         ref={ref}
         poster={poster || undefined}
         controls
         autoPlay
+        playsInline
         className="absolute inset-0 h-full w-full"
         onLoadedMetadata={(e) => onTime(0, Math.floor(e.currentTarget.duration || 0))}
         onTimeUpdate={(e) => onTime(Math.floor(e.currentTarget.currentTime), 0)}
@@ -167,9 +228,42 @@ function HlsPlayer({ src, poster, title, onTime }: { src: string; poster?: strin
   )
 }
 
+// Wrap an hls.js loader class so every request it makes gets routed through
+// our /api/iptv/proxy endpoint. This transparently fixes:
+//   - Mixed content (HTTP upstream on HTTPS site)
+//   - Missing CORS headers on upstream
+function createProxyLoader(BaseLoader: any) {
+  return class ProxyLoader extends BaseLoader {
+    load(context: any, config: any, callbacks: any) {
+      try {
+        const original = context.url
+        // Only wrap absolute http(s):// URLs that aren't already going through our proxy.
+        // hls.js resolves relative URLs (like the rewritten segment URLs returned by
+        // our proxy) to absolute against the page origin, so we have to detect that case
+        // to avoid double-wrapping (which would cause infinite recursion).
+        if (original && /^https?:\/\//.test(original) && !original.includes("/api/iptv/proxy")) {
+          context.url = proxifyUrl(original)
+        }
+      } catch {}
+      super.load(context, config, callbacks)
+    }
+  }
+}
+
+// Build a proxied URL: /api/iptv/proxy?u=ENCODED
+// Only used for absolute http(s) URLs that the browser can't fetch directly.
+function proxifyUrl(url: string): string {
+  if (!url) return url
+  // Don't double-wrap URLs that are already going through our proxy
+  if (url.startsWith("/api/iptv/proxy")) return url
+  // Don't proxy relative URLs (e.g. /auth/...ts from a playlist hls.js already rewrote)
+  if (!/^https?:\/\//.test(url)) return url
+  return `/api/iptv/proxy?u=${encodeURIComponent(url)}`
+}
+
 function DashPlayer({ src, poster, title, onTime }: { src: string; poster?: string | null; title: string; onTime: (p: number, d: number) => void }) {
   const ref = useRef<HTMLVideoElement>(null)
-  const [err, setErr] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
   useEffect(() => {
     let dash: any
     import("dashjs").then((mod) => {
@@ -177,11 +271,11 @@ function DashPlayer({ src, poster, title, onTime }: { src: string; poster?: stri
       if (!v) return
       dash = mod.default.MediaPlayer().create()
       dash.initialize(v, src, true)
-      dash.on("error", () => setErr(true))
-    }).catch(() => setErr(true))
+      dash.on("error", (e: any) => setErr(`DASH error: ${e?.error?.code || e?.message || "unknown"}`))
+    }).catch(() => setErr("Failed to load dashjs"))
     return () => { try { dash?.reset() } catch {} }
   }, [src])
-  if (err) return <FallbackNoPlay title={title} />
+  if (err) return <FallbackNoPlay title={title} reason={err} />
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
       <video
@@ -197,10 +291,13 @@ function DashPlayer({ src, poster, title, onTime }: { src: string; poster?: stri
   )
 }
 
-function FallbackNoPlay({ title }: { title: string }) {
+function FallbackNoPlay({ title, reason }: { title: string; reason?: string }) {
   return (
-    <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-zinc-950 text-zinc-400">
-      <p className="px-8 text-center">Unable to play &ldquo;{title}&rdquo; in this browser.</p>
+    <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl bg-zinc-950 px-8 text-center">
+      <AlertCircle className="h-10 w-10 text-zinc-600" />
+      <p className="text-zinc-400">Unable to play &ldquo;{title}&rdquo; in this browser.</p>
+      {reason && <p className="text-xs text-zinc-600 max-w-md">{reason}</p>}
+      <p className="text-xs text-zinc-600">Try the &ldquo;Open in Web Player&rdquo; option on the Live TV page.</p>
     </div>
   )
 }

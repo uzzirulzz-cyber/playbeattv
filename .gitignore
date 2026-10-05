@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,22 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Per-user IPTV seed scripts (contain real credentials)
+scripts/seed-iptv-line.ts
+scripts/seed-*.local.ts
+
+# Local DB
+db/*.db
+db/*.db-journal
+
+# Upload dir (for PlayBeat-owned content uploads)
+upload/
+# Sandbox infrastructure (not needed in production repo)
+/.zscripts/
+/Caddyfile
+/tests/
+/examples/
+/mini-services/
+/.zscripts/dev.log
+/.zscripts/dev.pid

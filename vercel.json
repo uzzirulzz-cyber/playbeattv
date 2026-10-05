@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "src/app/api/admin/import/bulk/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/import/search/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/health/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/iptv/proxy/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/iptv/channels/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/admin/iptv/m3u/[lineId]/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": []
+}

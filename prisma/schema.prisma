@@ -1,0 +1,337 @@
+// PlayBeat TV — content ingestion & publishing schema
+// Modeled relationally on the MongoDB-style document spec from the brief.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// CONTENT — movies, documentaries, shorts, animation, etc.
+// (Episodes of series live in the Episode table below.)
+// =========================================================
+model Content {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  type        String   // movie | documentary | short | animation | other
+  description String   @default("")
+
+  poster      String?
+  backdrop    String?
+
+  releaseYear Int?
+  duration    Int?    // seconds
+  genres      String  @default("[]") // JSON array of strings
+  languages   String  @default("[]") // JSON array of strings
+  country     String?
+  ageRating   String?
+
+  featured    Boolean  @default(false)
+  trending    Boolean  @default(false)
+  published   Boolean  @default(false)
+  available   Boolean  @default(true) // false if source health check fails
+
+  // Source
+  sourceProvider    String  // youtube | wikimedia | playbeat | direct
+  sourceId           String  // e.g. YouTube video ID, Wikimedia file name
+  originalUrl       String?
+  embedUrl          String?
+  streamUrl         String?
+
+  // License
+  licenseType       String   @default("unknown")
+  licenseVerified   Boolean  @default(false)
+  licenseAttribution String?
+  licenseSourceUrl  String?
+  licenseStatus     String   @default("review") // verified | review | rejected
+  licenseCheckedAt   DateTime?
+
+  // SEO (JSON: { title, description, keywords[], canonical })
+  seoJson   String   @default("{}")
+
+  // Engagement
+  views       Int     @default(0)
+  plays       Int     @default(0)
+  completions Int     @default(0)
+  favorites   Int     @default(0)
+  likes       Int     @default(0)
+  sourcePopularity Int @default(0) // e.g. YouTube view count snapshot
+  trendingScore Int   @default(0)
+
+  // Series linkage for standalone items that belong to a series (rare)
+  seriesId    String?
+  series      Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
+  importedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  watchlist      WatchlistItem[]
+  watchProgress  WatchProgress[]
+  auditLogs      AuditLog[]
+  importJobItems ImportJobItem[]
+
+  @@index([type, published])
+  @@index([sourceProvider, sourceId])
+  @@index([trendingScore])
+  @@index([licenseStatus])
+}
+
+// =========================================================
+// SERIES → SEASONS → EPISODES
+// =========================================================
+model Series {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String   @default("")
+  poster      String?
+  backdrop    String?
+  genres      String  @default("[]")
+  languages   String  @default("[]")
+  country     String?
+  featured    Boolean @default(false)
+  trending    Boolean @default(false)
+  published   Boolean @default(false)
+
+  sourceProvider String?
+  sourceChannel  String?
+
+  seoJson   String  @default("{}")
+  trendingScore Int @default(0)
+
+  importedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  seasons   Season[]
+  episodes  Episode[] // denormalized for fast queries
+  standaloneContent Content[] // rare: standalone items linked to a series
+
+  watchlist      WatchlistItem[]
+  watchProgress  WatchProgress[]
+
+  @@index([published])
+  @@index([trendingScore])
+}
+
+model Season {
+  id          String   @id @default(cuid())
+  seriesId    String
+  series      Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  title       String?
+  poster      String?
+  description String?
+
+  episodes Episode[]
+
+  @@unique([seriesId, seasonNumber])
+}
+
+model Episode {
+  id          String   @id @default(cuid())
+  seriesId    String
+  series      Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  seasonId    String
+  season      Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  seasonNumber Int    // denormalized for fast querying & uniqueness
+  episodeNumber Int
+  title       String
+  slug        String
+  description String   @default("")
+  duration    Int?    // seconds
+  thumbnail   String?
+
+  // Source
+  sourceProvider    String
+  sourceId          String
+  originalUrl      String?
+  embedUrl         String?
+  streamUrl        String?
+
+  // License
+  licenseType       String  @default("unknown")
+  licenseVerified   Boolean @default(false)
+  licenseAttribution String?
+  licenseSourceUrl  String?
+  licenseStatus     String  @default("review")
+
+  published   Boolean @default(false)
+  available   Boolean @default(true)
+
+  views       Int     @default(0)
+  plays       Int     @default(0)
+  completions Int     @default(0)
+
+  seoJson     String  @default("{}")
+  importedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  watchlist      WatchlistItem[]
+  watchProgress  WatchProgress[]
+  auditLogs      AuditLog[]
+  importJobItems ImportJobItem[]
+
+  @@unique([seriesId, seasonNumber, episodeNumber])
+  @@index([seriesId, seasonNumber])
+  @@index([licenseStatus])
+}
+
+// =========================================================
+// IMPORT ENGINE
+// =========================================================
+model ImportJob {
+  id           String   @id @default(cuid())
+  status       String   @default("running") // running | completed | failed | partial
+  source       String   // youtube | wikimedia | mixed
+  query        String?
+  contentType  String?  // movies | series | documentaries | animation | shorts | all
+  language     String?
+  licenseFilter String? // public_domain | creative_commons | official_embeddable | all_verified
+  minDuration  Int?     // seconds
+  maxResults   Int
+  requestedBy  String   @default("system") // admin id / system
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  discovered   Int @default(0)
+  imported     Int @default(0)
+  published    Int @default(0)
+  duplicates   Int @default(0)
+  rejected     Int @default(0)
+  reviewRequired Int @default(0)
+  errors       Int @default(0)
+  log          String @default("[]") // JSON array of strings
+
+  items ImportJobItem[]
+  auditLogs AuditLog[]
+}
+
+model ImportJobItem {
+  id            String   @id @default(cuid())
+  jobId         String
+  job           ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  sourceId      String
+  sourceProvider String
+  title         String
+  status        String   @default("discovered") // discovered | imported | duplicate | rejected | error
+  reason        String?
+  contentId     String?
+  content       Content? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  episodeId     String?
+  episode       Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+}
+
+model SourceQuery {
+  id        String   @id @default(cuid())
+  query     String
+  source    String   @default("youtube") // youtube | wikimedia
+  enabled   Boolean  @default(true)
+  lastUsed  DateTime?
+  useCount  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model HomepageRow {
+  id       String  @id @default(cuid())
+  key      String  @unique // featured | trending_now | recently_added | ...
+  title    String
+  enabled  Boolean @default(true)
+  order    Int     @default(0)
+  // rails can be one of: dynamic (uses key+filter), or manual list of content/series ids
+  filterType String @default("dynamic") // dynamic | manual_content | manual_series
+  filterJson String @default("{}")     // e.g. {"type":"movie","genre":"Action","sort":"trending"}
+  itemIds    String @default("[]")      // JSON array — used when filterType is manual_*
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =========================================================
+// USER STATE (lightweight — no auth required for watchlist)
+// =========================================================
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  name      String?
+  role      String   @default("viewer") // viewer | admin
+  password  String?  // hashed; only admins need it
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String?
+  content   Content? @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  seriesId  String?
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodeId String?
+  episode   Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WatchProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  contentId    String?
+  content      Content? @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  seriesId     String?
+  series       Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodeId    String?
+  episode      Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  position     Int      @default(0) // seconds
+  duration     Int      @default(0) // seconds
+  percentage   Int      @default(0) // 0-100
+  lastWatched  DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@unique([userId, episodeId])
+  @@index([userId, lastWatched])
+}
+
+// =========================================================
+// AUDIT LOG
+// =========================================================
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String   @default("system") // admin email / system / anonymous
+  action    String   // content.imported | content.published | content.rejected | content.edited | license.override | content.deleted | source.changed | import.run | settings.changed
+  target    String?  // content id / series id / episode id
+  targetType String? // content | series | episode | job | setting
+  detail    String   @default("{}") // JSON
+  ip        String?
+  jobId     String?
+  job       ImportJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  contentId String?
+  content   Content?   @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  episodeId String?
+  episode   Episode?   @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  timestamp DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([action])
+}
+
+// =========================================================
+// SETTINGS (single row, keyed by id="singleton")
+// =========================================================
+model Settings {
+  id                 String   @id @default("singleton")
+  autoImport         Boolean  @default(false)
+  autoPublishVerified Boolean @default(false)
+  importFrequency    String   @default("daily") // 6h | 12h | daily | weekly
+  maxImportPerRun    Int      @default(50)
+  youtubeApiKeySet   Boolean  @default(false)
+  minDurationSec     Int      @default(60)      // quality rule: reject shorter unless Short
+  lastImportAt       DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

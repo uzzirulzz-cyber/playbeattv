@@ -32,17 +32,25 @@ export function WatchView() {
   const [content, setContent] = useState<ContentDetail | null>(null)
   const [series, setSeries] = useState<SeriesDetail | null>(null)
   const [episode, setEpisode] = useState<any | null>(null)
-  const [loading, setLoading] = useState(true)
   const userId = useApp(s => s.ensureUserId())
   const { ids: watchlistIds, refresh: refreshWatchlist } = useWatchlistSet(userId)
 
   const targetId = content?.id || episode?.id || series?.id || ""
   const inList = targetId ? watchlistIds.has(targetId) : false
 
+  // For IPTV channels, all data is on the watchTarget itself — no async fetch needed
+  const isChannel = watchTarget?.kind === "channel"
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     if (!watchTarget) return
     let cancel = false
     const t = watchTarget
+    if (t.kind === "channel") {
+      // No fetch needed — channel data is already on the watchTarget
+      // Loading state is reset by the remount via key on WatchView
+      return
+    }
     if (t.kind === "content") {
       fetch(`/api/content/${t.slug}`).then(r => r.ok ? r.json() : null).then(d => {
         if (cancel) return
@@ -93,6 +101,18 @@ export function WatchView() {
         seriesId: series?.id,
       }
     }
+    // IPTV channel — use the URL directly as streamUrl
+    if (watchTarget?.kind === "channel") {
+      return {
+        sourceProvider: "iptv",
+        sourceId: watchTarget.url,
+        originalUrl: watchTarget.url,
+        embedUrl: null,
+        streamUrl: watchTarget.url,
+        poster: watchTarget.logo || null,
+        title: watchTarget.name,
+      }
+    }
     return null
   })()
 
@@ -121,7 +141,7 @@ export function WatchView() {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      {loading ? (
+      {loading && !isChannel ? (
         <div className="space-y-4">
           <Skeleton className="aspect-video w-full rounded-xl" />
           <Skeleton className="h-8 w-2/3" />
@@ -171,33 +191,44 @@ export function WatchView() {
             </div>
           </div>
 
-          {/* License / attribution */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <LicenseBadge status={(content?.license?.status || episode?.license?.status)} />
-              <span className="text-xs text-zinc-500 capitalize">
-                {content?.license?.type || episode?.license?.type || "unknown license"}
-              </span>
-              {(content?.license?.status || episode?.license?.status) === "verified" && (
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          {/* License / attribution (skip for IPTV channels) */}
+          {target.sourceProvider !== "iptv" && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <LicenseBadge status={(content?.license?.status || episode?.license?.status)} />
+                <span className="text-xs text-zinc-500 capitalize">
+                  {content?.license?.type || episode?.license?.type || "unknown license"}
+                </span>
+                {(content?.license?.status || episode?.license?.status) === "verified" && (
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                )}
+              </div>
+              {(content?.license?.attribution || episode?.license?.attribution) && (
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {content?.license?.attribution || episode?.license?.attribution}
+                </p>
+              )}
+              {(content?.license?.sourceUrl || episode?.license?.sourceUrl) && (
+                <a
+                  href={content?.license?.sourceUrl || episode?.license?.sourceUrl || "#"}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-1 inline-block text-xs text-cyan-300 hover:text-cyan-200"
+                >
+                  View license source
+                </a>
               )}
             </div>
-            {(content?.license?.attribution || episode?.license?.attribution) && (
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                {content?.license?.attribution || episode?.license?.attribution}
+          )}
+
+          {/* IPTV channel notice */}
+          {target.sourceProvider === "iptv" && (
+            <div className="rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-4">
+              <p className="text-xs text-amber-200/80">
+                This is a <strong>premium IPTV channel</strong> streamed via the PlayBeat TV reseller integration. Streaming requires an active IPTV line.
               </p>
-            )}
-            {(content?.license?.sourceUrl || episode?.license?.sourceUrl) && (
-              <a
-                href={content?.license?.sourceUrl || episode?.license?.sourceUrl || "#"}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="mt-1 inline-block text-xs text-cyan-300 hover:text-cyan-200"
-              >
-                View license source
-              </a>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Description */}
           {(content?.description || episode?.description || series?.description) && (

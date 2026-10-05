@@ -37,3 +37,49 @@ Stage Summary:
 - 3 import jobs logged in audit history; 30 audit log entries
 - Production-ready: admin sets YOUTUBE_API_KEY + ADMIN_TOKEN env vars, toggles Auto Import ON in settings, and the system continuously populates itself from the source query library
 - Quality and legal verification take priority: content with unverified license is saved as Review Required and is never auto-published
+
+---
+Task ID: 2
+Agent: main (super-z)
+Task: Add "Premium IPTV" module to PlayBeat TV (Xtream Masters reseller API integration)
+
+Work Log:
+- Extended Prisma schema with 4 new models: IptvLine, ActiveCode, MacAddress, IptvCreditLog + IPTV fields on Settings
+- Built typed Xtream reseller API client at src/lib/xtream/client.ts covering:
+  - Account info, credit logs
+  - Xtream line CRUD (create/edit/extend/delete with force-refund)
+  - ActiveCode CRUD (create with auto-generated 14-digit code + base64 callback support)
+  - Mac address CRUD (with format validation 00:AA:BB:CC:DD:11)
+  - M3U playlist proxy + parser (parses #EXTINF metadata into structured channel objects)
+  - Demo mode fallback when no XTREAM_API_KEY env var is set (returns realistic mock data, simulates writes)
+- Added 7 new API routes:
+  - GET /api/admin/iptv/status — account info + config status
+  - GET /api/admin/iptv/credit-logs — mirrors remote logs to local DB
+  - GET/POST /api/admin/iptv/lines — list + create + extend + edit + delete (with audit logging)
+  - GET/POST /api/admin/iptv/activecodes — same CRUD pattern
+  - GET/POST /api/admin/iptv/macs — same CRUD pattern
+  - GET /api/admin/iptv/m3u/[lineId] — proxies the M3U playlist (server-side only, key never exposed)
+  - GET /api/iptv/channels — public endpoint returning parsed channel list
+  - POST /api/admin/iptv/callback — receives ActiveCode activation events from reseller
+- Updated existing endpoints to expose IPTV status: /api/admin/status and /api/admin/import/settings
+- Built admin IPTV UI — 5 tabs under a new "IPTV" nav item:
+  - Overview: account info (credit balance, total lines, monthly plan, max lines, next renewal) + trial usage progress bar + demo-mode banner
+  - Xtream Lines: list with status pills + create form (username/password/plan/bouquet/CONX/notice + channels/VODs/adult flags) + extend/delete actions + reveal-M3U-URL
+  - ActiveCodes: list + generate form (auto 14-digit code) + extend/delete + copy-to-clipboard + activated badge
+  - Mac Addresses: list + register form (with MAC validation) + extend/delete
+  - Credit Logs: table view with date/info/charge/balance, color-coded +/- charges
+- Updated Admin Settings page with new "Premium IPTV (reseller) configuration" panel showing XTREAM_API_KEY/XTREAM_SERVER_URL/iptvEnabled status + enable/disable toggle
+- Built public Live TV view at /view=live:
+  - Header nav gets a new amber-colored "Live TV" link
+  - Channel grid with thumbnails, group filter chips, type filter (live/vod/series), search
+  - Click a channel → opens Watch view with PlayerAdapter handling the URL (HLS via hls.js, MP4 via native HTML5)
+  - Watch page shows amber "premium IPTV channel" notice instead of the public-domain license panel
+- Updated Zustand store with new "live" view + "iptv-overview/lines/activecodes/macs/logs" admin views + "channel" watchTarget kind
+- Seeded 6 demo IPTV channels (Big Buck Bunny, Sintel, Tears of Steel, Elephant Dream, Demo News 24, For Bigger Joyrides) using public test streams — playable in the sandbox without any reseller API key
+
+Stage Summary:
+- Premium IPTV module fully integrated alongside the free legal library — they coexist as two product tiers
+- All 3 line types supported: Xtream users, ActiveCodes, Mac addresses
+- Demo mode ensures the entire admin UI is explorable without a real reseller account
+- Going live requires only: set XTREAM_API_KEY + XTREAM_SERVER_URL env vars, then click "Enable IPTV module" in Admin → Settings
+- End-to-end verified with Agent Browser: Live TV grid renders with channel cards, clicking a channel opens the player with amber premium-notice, admin IPTV overview shows demo credit balance (1088.73) and trial usage (7/50), creating a demo line works and shows in the list with ACTIVE status + Extend/Delete buttons

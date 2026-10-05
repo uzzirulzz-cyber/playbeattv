@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/admin"
 import { db } from "@/lib/db"
 import { isYouTubeConfigured } from "@/lib/import/youtube"
+import { isXtreamConfigured } from "@/lib/xtream/client"
 
 export const dynamic = "force-dynamic"
 
-// Public status check — useful for the admin UI to know if it's "logged in" without revealing token
 export async function GET(req: NextRequest) {
   const isAdmin = requireAdmin(req).ok
   const settings = await db.settings.findUnique({ where: { id: "singleton" } })
@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
     authConfigured: !!process.env.ADMIN_TOKEN || !!process.env.ADMIN_PASSWORD,
     youtube: {
       configured: isYouTubeConfigured(),
+    },
+    xtream: {
+      configured: isXtreamConfigured(),
+      enabled: settings?.iptvEnabled ?? false,
     },
     settings: {
       autoImport: settings?.autoImport ?? false,

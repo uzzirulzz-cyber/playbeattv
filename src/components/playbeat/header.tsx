@@ -39,6 +39,7 @@ export function Header() {
           <NavBtn active={view === "home"} onClick={() => setView("home")}>Home</NavBtn>
           <NavBtn active={view === "browse" && browse.type === "movie"} onClick={() => setBrowse({ type: "movie", sort: "trending" })}>Movies</NavBtn>
           <NavBtn active={view === "browse" && browse.type === "series"} onClick={() => setBrowse({ type: "series", sort: "trending" })}>Series</NavBtn>
+          <NavBtn active={view === "live"} onClick={() => setView("live")} className="text-amber-300">Live TV</NavBtn>
           <NavBtn active={view === "browse" && browse.type === "documentary"} onClick={() => setBrowse({ type: "documentary", sort: "trending" })}>Documentaries</NavBtn>
           <NavBtn active={view === "browse" && browse.type === "animation"} onClick={() => setBrowse({ type: "animation", sort: "trending" })}>Animation</NavBtn>
           <NavBtn active={view === "browse" && browse.type === "short"} onClick={() => setBrowse({ type: "short", sort: "recent" })}>Shorts</NavBtn>

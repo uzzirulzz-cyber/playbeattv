@@ -3,11 +3,12 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type View = "home" | "browse" | "search" | "mylist" | "watch" | "admin"
-export type AdminView = "dashboard" | "import-url" | "import-search" | "import-bulk" | "content" | "audit" | "settings" | "queries" | "rows" | "series"
+export type View = "home" | "browse" | "search" | "mylist" | "watch" | "admin" | "live"
+export type AdminView = "dashboard" | "import-url" | "import-search" | "import-bulk" | "content" | "audit" | "settings" | "queries" | "rows" | "series" | "iptv-overview" | "iptv-lines" | "iptv-activecodes" | "iptv-macs" | "iptv-logs"
 export type WatchTarget =
   | { kind: "content"; slug: string }
   | { kind: "series"; slug: string; season?: number; episode?: number }
+  | { kind: "channel"; url: string; name: string; logo?: string }
   | null
 
 export interface BrowseFilter {
@@ -30,6 +31,7 @@ interface AppState {
   setAdminView: (v: AdminView) => void
   watchContent: (slug: string) => void
   watchSeries: (slug: string, season?: number, episode?: number) => void
+  watchChannel: (url: string, name: string, logo?: string) => void
   closePlayer: () => void
   setBrowse: (b: Partial<BrowseFilter>) => void
   setSearch: (q: string) => void
@@ -56,6 +58,8 @@ export const useApp = create<AppState>()(
       watchContent: (slug) => set({ view: "watch", watchTarget: { kind: "content", slug } }),
       watchSeries: (slug, season, episode) =>
         set({ view: "watch", watchTarget: { kind: "series", slug, season, episode } }),
+      watchChannel: (url, name, logo) =>
+        set({ view: "watch", watchTarget: { kind: "channel", url, name, logo } }),
       closePlayer: () => set({ view: "home", watchTarget: null }),
       setBrowse: (b) => set({ browse: { ...get().browse, ...b }, view: "browse" }),
       setSearch: (q) => set({ search: q, view: q ? "search" : "home" }),

@@ -14,6 +14,7 @@ import { AdminQueries } from "./admin/queries"
 import { AdminRows } from "./admin/rows"
 import { AdminJobs } from "./admin/jobs"
 import { AdminLogin } from "./admin/login"
+import { AdminIptv } from "./admin/iptv"
 
 export function AdminView() {
   const { adminView, isAdmin } = useApp()
@@ -44,6 +45,11 @@ export function AdminView() {
         {adminView === "queries" && <AdminQueries />}
         {adminView === "rows" && <AdminRows />}
         {adminView === "jobs" && <AdminJobs />}
+        {adminView === "iptv-overview" && <AdminIptv />}
+        {adminView === "iptv-lines" && <AdminIptv />}
+        {adminView === "iptv-activecodes" && <AdminIptv />}
+        {adminView === "iptv-macs" && <AdminIptv />}
+        {adminView === "iptv-logs" && <AdminIptv />}
       </div>
     </div>
   )
@@ -61,6 +67,7 @@ function AdminNav() {
     { v: "series",        l: "Series" },
     { v: "queries",       l: "Query Library" },
     { v: "rows",          l: "Homepage Rows" },
+    { v: "iptv-overview", l: "IPTV" },
     { v: "audit",         l: "Audit Log" },
     { v: "settings",      l: "Settings" },
   ]

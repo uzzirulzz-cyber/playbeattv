@@ -8,6 +8,7 @@ import { SearchView } from "@/components/playbeat/search"
 import { MyListView } from "@/components/playbeat/mylist"
 import { WatchView } from "@/components/playbeat/watch"
 import { AdminView } from "@/components/playbeat/admin"
+import { LiveView } from "@/components/playbeat/live"
 import { Footer } from "@/components/playbeat/footer"
 
 export default function Page() {
@@ -22,6 +23,7 @@ export default function Page() {
         {view === "browse" && <BrowseView />}
         {view === "search" && <SearchView />}
         {view === "mylist" && <MyListView />}
+        {view === "live" && <LiveView />}
         {view === "watch" && (
           <WatchView key={JSON.stringify(watchTarget)} />
         )}

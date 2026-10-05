@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, Heart } from "lucide-react"
+import { Loader2, Heart, Tv } from "lucide-react"
 
 export function AdminSettings() {
   const [s, setS] = useState<any>(null)
@@ -98,6 +98,47 @@ export function AdminSettings() {
             Admin endpoints are currently open in dev mode. Set <code className="rounded bg-black/30 px-1 py-0.5">ADMIN_TOKEN</code> to secure them.
           </p>
         )}
+      </div>
+
+      <div className="rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-5">
+        <h3 className="text-sm font-semibold text-amber-200 flex items-center gap-2">
+          <Tv className="h-4 w-4" /> Premium IPTV (reseller) configuration
+        </h3>
+        <ul className="mt-2 space-y-1 text-xs">
+          <li className="flex items-center gap-2">
+            <Dot on={s.xtreamApikeySet} />
+            <span className="text-zinc-300">XTREAM_API_KEY — set in environment</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <Dot on={!!s.xtreamServerUrl} />
+            <span className="text-zinc-300">XTREAM_SERVER_URL — e.g. <code className="rounded bg-black/30 px-1 py-0.5">http://your-panel.tld:80</code></span>
+          </li>
+          <li className="flex items-center gap-2">
+            <Dot on={!!s.iptvEnabled} />
+            <span className="text-zinc-300">Premium IPTV module enabled in DB settings</span>
+          </li>
+        </ul>
+        {!s.xtreamApikeySet && (
+          <p className="mt-3 text-xs text-amber-200/70">
+            Without XTREAM_API_KEY, the IPTV module runs in demo mode — UI is fully explorable but no real reseller API calls are made. Set the key + server URL and click below to go live.
+          </p>
+        )}
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={async () => {
+              await fetch("/api/admin/import/settings", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ iptvEnabled: !s.iptvEnabled }),
+              })
+              // reload
+              fetch("/api/admin/import/settings").then(r => r.json()).then(d => setS(d))
+            }}
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black hover:bg-amber-400"
+          >
+            {s.iptvEnabled ? "Disable IPTV module" : "Enable IPTV module"}
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">

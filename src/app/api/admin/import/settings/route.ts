@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/admin"
 import { db } from "@/lib/db"
 import { isYouTubeConfigured } from "@/lib/import/youtube"
+import { isXtreamConfigured, getServerUrl } from "@/lib/xtream/client"
 
 export const dynamic = "force-dynamic"
 
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
     lastImportAt: s?.lastImportAt,
     youtubeApiKeySet: isYouTubeConfigured(),
     authConfigured: !!process.env.ADMIN_TOKEN || !!process.env.ADMIN_PASSWORD,
+    xtreamApikeySet: isXtreamConfigured(),
+    xtreamServerUrl: getServerUrl(),
+    iptvEnabled: s?.iptvEnabled ?? false,
   })
 }
 

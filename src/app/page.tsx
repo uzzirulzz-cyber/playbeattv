@@ -2,32 +2,24 @@
 
 import { useApp } from "@/stores/app"
 import { Header } from "@/components/playbeat/header"
-import { HomeView } from "@/components/playbeat/home"
-import { BrowseView } from "@/components/playbeat/browse"
-import { SearchView } from "@/components/playbeat/search"
-import { MyListView } from "@/components/playbeat/mylist"
-import { WatchView } from "@/components/playbeat/watch"
-import { AdminView } from "@/components/playbeat/admin"
-import { LiveView } from "@/components/playbeat/live"
 import { Footer } from "@/components/playbeat/footer"
+import { PlaylistsView } from "@/components/playbeat/playlists-view"
+import { PlaylistDetailView } from "@/components/playbeat/playlist-detail"
+import { ImportView } from "@/components/playbeat/import-view"
+import { SettingsView } from "@/components/playbeat/settings-view"
 
 export default function Page() {
   const view = useApp(s => s.view)
-  const watchTarget = useApp(s => s.watchTarget)
+  const currentPlaylistId = useApp(s => s.currentPlaylistId)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#070912]">
+    <div className="flex min-h-screen flex-col bg-[#070912] text-zinc-100">
       <Header />
       <main className="flex-1">
-        {view === "home" && <HomeView />}
-        {view === "browse" && <BrowseView />}
-        {view === "search" && <SearchView />}
-        {view === "mylist" && <MyListView />}
-        {view === "live" && <LiveView />}
-        {view === "watch" && (
-          <WatchView key={JSON.stringify(watchTarget)} />
-        )}
-        {view === "admin" && <AdminView />}
+        {view === "playlists" && <PlaylistsView />}
+        {view === "playlist" && currentPlaylistId && <PlaylistDetailView key={currentPlaylistId} playlistId={currentPlaylistId} />}
+        {view === "import" && <ImportView />}
+        {view === "settings" && <SettingsView />}
       </main>
       <Footer />
     </div>

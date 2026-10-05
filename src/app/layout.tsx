@@ -14,21 +14,21 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PlayBeat TV — Free Movies, Series & Documentaries",
-  description: "Stream thousands of free, legal movies, web series, documentaries, animations and short films. Sourced exclusively from public-domain, Creative Commons, and official embeddable sources.",
-  keywords: ["free movies", "public domain films", "creative commons", "free streaming", "web series", "documentaries", "PlayBeat TV"],
+  title: "PlayBeat M3U — IPTV Playlist Manager",
+  description: "Create, organize, and export IPTV playlists as M3U / M3U8 files. Import existing playlists, manage channels with stream URLs, logos, categories, and EPG URLs.",
+  keywords: ["IPTV", "M3U", "M3U8", "playlist", "playlist manager", "channel", "streaming", "PlayBeat"],
   authors: [{ name: "PlayBeat TV" }],
   openGraph: {
-    title: "PlayBeat TV — Free Movies, Series & Documentaries",
-    description: "Stream thousands of free, legal movies, web series, documentaries, animations and short films.",
+    title: "PlayBeat M3U — IPTV Playlist Manager",
+    description: "Create, organize, and export IPTV playlists as M3U / M3U8 files.",
     url: "https://playbeattv.buzz",
-    siteName: "PlayBeat TV",
+    siteName: "PlayBeat M3U",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PlayBeat TV",
-    description: "Stream free, legal movies, series, documentaries and more.",
+    title: "PlayBeat M3U",
+    description: "IPTV Playlist Manager — create, organize, export M3U8.",
   },
 }
 

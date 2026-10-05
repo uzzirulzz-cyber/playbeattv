@@ -3,78 +3,41 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type View = "home" | "browse" | "search" | "mylist" | "watch" | "admin" | "live"
-export type AdminView = "dashboard" | "import-url" | "import-search" | "import-bulk" | "content" | "audit" | "settings" | "queries" | "rows" | "series" | "iptv-overview" | "iptv-lines" | "iptv-activecodes" | "iptv-macs" | "iptv-logs"
-export type WatchTarget =
-  | { kind: "content"; slug: string }
-  | { kind: "series"; slug: string; season?: number; episode?: number }
-  | { kind: "channel"; url: string; name: string; logo?: string }
-  | null
-
-export interface BrowseFilter {
-  type: string
-  genre?: string
-  language?: string
-  sort: string
-}
+export type View = "playlists" | "playlist" | "import" | "settings"
 
 interface AppState {
   view: View
-  adminView: AdminView
-  watchTarget: WatchTarget
-  browse: BrowseFilter
+  currentPlaylistId: string | null
   search: string
+  categoryFilter: string | null
   isAdmin: boolean
-  userId: string
 
   setView: (v: View) => void
-  setAdminView: (v: AdminView) => void
-  watchContent: (slug: string) => void
-  watchSeries: (slug: string, season?: number, episode?: number) => void
-  watchChannel: (url: string, name: string, logo?: string) => void
-  closePlayer: () => void
-  setBrowse: (b: Partial<BrowseFilter>) => void
+  openPlaylist: (id: string) => void
+  closePlaylist: () => void
   setSearch: (q: string) => void
+  setCategoryFilter: (c: string | null) => void
   setAdmin: (v: boolean) => void
-  ensureUserId: () => string
-}
-
-function genUserId(): string {
-  return "anon-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 }
 
 export const useApp = create<AppState>()(
   persist(
     (set, get) => ({
-      view: "home",
-      adminView: "dashboard",
-      watchTarget: null,
-      browse: { type: "all", sort: "trending" },
+      view: "playlists",
+      currentPlaylistId: null,
       search: "",
+      categoryFilter: null,
       isAdmin: false,
-      userId: "",
-      setView: (v) => set({ view: v }),
-      setAdminView: (v) => set({ adminView: v }),
-      watchContent: (slug) => set({ view: "watch", watchTarget: { kind: "content", slug } }),
-      watchSeries: (slug, season, episode) =>
-        set({ view: "watch", watchTarget: { kind: "series", slug, season, episode } }),
-      watchChannel: (url, name, logo) =>
-        set({ view: "watch", watchTarget: { kind: "channel", url, name, logo } }),
-      closePlayer: () => set({ view: "home", watchTarget: null }),
-      setBrowse: (b) => set({ browse: { ...get().browse, ...b }, view: "browse" }),
-      setSearch: (q) => set({ search: q, view: q ? "search" : "home" }),
+      setView: (v) => set({ view: v, currentPlaylistId: v === "playlist" ? get().currentPlaylistId : null }),
+      openPlaylist: (id) => set({ view: "playlist", currentPlaylistId: id, search: "", categoryFilter: null }),
+      closePlaylist: () => set({ view: "playlists", currentPlaylistId: null, search: "", categoryFilter: null }),
+      setSearch: (q) => set({ search: q }),
+      setCategoryFilter: (c) => set({ categoryFilter: c }),
       setAdmin: (v) => set({ isAdmin: v }),
-      ensureUserId: () => {
-        const cur = get().userId
-        if (cur) return cur
-        const next = genUserId()
-        set({ userId: next })
-        return next
-      },
     }),
     {
       name: "pb-state",
-      partialize: (s) => ({ userId: s.userId, isAdmin: s.isAdmin }),
+      partialize: (s) => ({ isAdmin: s.isAdmin }),
     }
   )
 )
